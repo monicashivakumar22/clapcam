@@ -1,3 +1,5 @@
+import type { EffectMode, ClapConfig, SegmentationConfig, PerformanceMetrics } from './index';
+
 export interface CameraDevice {
   deviceId: string;
   label: string;
@@ -17,7 +19,7 @@ export interface CameraErrorDetails {
   userFriendlyMessage: string;
 }
 
-// ─── Phase 4: Calibration Types ───────────────────────────────────────────
+// ─── Calibration Types ───────────────────────────────────────────────────
 
 export type CalibrationState =
   | 'idle'
@@ -36,6 +38,8 @@ export interface CapturedBackground {
   isMirrored: boolean;
 }
 
+// ─── Complete ClapCam Store State ─────────────────────────────────────────
+
 export interface ClapCamStoreState {
   // Camera state
   cameraActive: boolean;
@@ -48,12 +52,36 @@ export interface ClapCamStoreState {
   videoDimensions: CameraResolution | null;
   isFullscreen: boolean;
 
-  // Calibration state (Phase 4)
+  // Calibration state
   isCalibrated: boolean;
   calibrationState: CalibrationState;
   countdownSeconds: number;
   capturedBackground: CapturedBackground | null;
   calibrationError: string | null;
+
+  // AI Segmentation state
+  modelLoaded: boolean;
+  modelLoading: boolean;
+  modelLoadProgress: number;
+  modelError: string | null;
+  segmentationConfig: SegmentationConfig;
+
+  // Audio & Clap Detection state
+  micActive: boolean;
+  micLoading: boolean;
+  micError: string | null;
+  clapConfig: ClapConfig;
+  lastClapTimestamp: number;
+  clapPulseActive: boolean;
+  audioFrequencyBars: number[];
+
+  // Effect & Invisibility state
+  effectMode: EffectMode;
+  isInvisible: boolean;
+  isProcessingEffect: boolean;
+
+  // Telemetry & Performance
+  performance: PerformanceMetrics;
 
   // Actions - Camera
   setCameraActive: (active: boolean) => void;
@@ -68,7 +96,7 @@ export interface ClapCamStoreState {
   setIsFullscreen: (fullscreen: boolean) => void;
   resetCameraState: () => void;
 
-  // Actions - Calibration (Phase 4)
+  // Actions - Calibration
   startCalibration: () => void;
   setCountdownSeconds: (seconds: number) => void;
   setCalibrationState: (state: CalibrationState) => void;
@@ -77,4 +105,26 @@ export interface ClapCamStoreState {
   retakeCalibration: () => void;
   resetCalibration: () => void;
   setCalibrationError: (error: string | null) => void;
+
+  // Actions - AI & Vision
+  setModelLoaded: (loaded: boolean) => void;
+  setModelLoading: (loading: boolean) => void;
+  setModelLoadProgress: (progress: number) => void;
+  setModelError: (error: string | null) => void;
+  setSegmentationConfig: (config: Partial<SegmentationConfig>) => void;
+
+  // Actions - Audio & Clap
+  setMicActive: (active: boolean) => void;
+  setMicLoading: (loading: boolean) => void;
+  setMicError: (error: string | null) => void;
+  setClapConfig: (config: Partial<ClapConfig>) => void;
+  triggerClapDetected: () => void;
+  setAudioFrequencyBars: (bars: number[]) => void;
+
+  // Actions - Effect & Invisibility
+  setEffectMode: (mode: EffectMode) => void;
+  setIsInvisible: (invisible: boolean) => void;
+  toggleInvisibility: () => void;
+  setIsProcessingEffect: (processing: boolean) => void;
+  updatePerformance: (metrics: Partial<PerformanceMetrics>) => void;
 }
