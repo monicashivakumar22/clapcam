@@ -7,6 +7,9 @@ interface CameraSystemStatusProps {
   activeDeviceLabel?: string;
   isCalibrated?: boolean;
   capturedBackground?: CapturedBackground | null;
+  modelLoaded?: boolean;
+  micActive?: boolean;
+  isInvisible?: boolean;
 }
 
 export function CameraSystemStatus({
@@ -15,6 +18,9 @@ export function CameraSystemStatus({
   activeDeviceLabel,
   isCalibrated = false,
   capturedBackground,
+  modelLoaded = false,
+  micActive = false,
+  isInvisible = false,
 }: CameraSystemStatusProps) {
   const isCameraLive = cameraStatus === 'active';
 
@@ -108,33 +114,63 @@ export function CameraSystemStatus({
         </div>
 
         {/* 3. Audio & Microphone */}
-        <div className="p-3.5 rounded-xl bg-surface/60 border border-white/5 flex flex-col justify-between opacity-70">
+        <div
+          className={`p-3.5 rounded-xl border flex flex-col justify-between transition-colors ${
+            micActive ? 'bg-accent-purple/5 border-accent-purple/25' : 'bg-surface/60 border-white/5 opacity-70'
+          }`}
+        >
           <div className="flex items-center justify-between gap-2 mb-2">
             <div className="flex items-center gap-2 text-white font-semibold">
               <Mic className="w-4 h-4 text-accent-purple" />
               <span>Audio &amp; Mic</span>
             </div>
-            <span className="px-2 py-0.5 rounded bg-surface-light text-[10px] text-gray-400 font-mono">
-              Phase 5
+            <span
+              className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${
+                micActive
+                  ? 'bg-accent-purple/15 text-accent-purple border border-accent-purple/30'
+                  : 'bg-surface-light text-gray-400'
+              }`}
+            >
+              {micActive ? 'LISTENING' : 'STANDBY'}
             </span>
           </div>
           <div className="text-[11px] text-gray-400">Web Audio AnalyserNode</div>
-          <div className="text-[10px] text-gray-500 mt-1">Standby &bull; Not Initialized</div>
+          <div className="text-[10px] text-gray-500 mt-1">
+            {micActive ? '2–4 kHz Clap Gate Active' : 'Clap trigger not armed'}
+          </div>
         </div>
 
         {/* 4. MediaPipe Vision & FX Compositor */}
-        <div className="p-3.5 rounded-xl bg-surface/60 border border-white/5 flex flex-col justify-between opacity-70">
+        <div
+          className={`p-3.5 rounded-xl border flex flex-col justify-between transition-colors ${
+            modelLoaded ? 'bg-surface/60 border-white/5' : 'bg-surface/60 border-white/5 opacity-70'
+          }`}
+        >
           <div className="flex items-center justify-between gap-2 mb-2">
             <div className="flex items-center gap-2 text-white font-semibold">
               <Cpu className="w-4 h-4 text-accent-pink" />
               <span>Vision &amp; FX</span>
             </div>
-            <span className="px-2 py-0.5 rounded bg-surface-light text-[10px] text-gray-400 font-mono">
-              Phase 5
+            <span
+              className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${
+                modelLoaded
+                  ? isInvisible
+                    ? 'bg-accent-pink/15 text-accent-pink border border-accent-pink/30'
+                    : 'bg-accent-green/15 text-accent-green border border-accent-green/30'
+                  : 'bg-surface-light text-gray-400'
+              }`}
+            >
+              {isInvisible ? 'INVISIBLE' : modelLoaded ? 'READY' : 'LOADING'}
             </span>
           </div>
           <div className="text-[11px] text-gray-400">MediaPipe GPU Delegate</div>
-          <div className="text-[10px] text-gray-500 mt-1">Standby &bull; Not Initialized</div>
+          <div className="text-[10px] text-gray-500 mt-1">
+            {isInvisible
+              ? 'Mask compositing live frame'
+              : modelLoaded
+              ? 'Segmentation model loaded'
+              : 'Standby • Not Initialized'}
+          </div>
         </div>
       </div>
 

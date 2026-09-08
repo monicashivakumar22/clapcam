@@ -30,7 +30,13 @@ export function useSegmentation() {
   }, [segmentationConfig.modelType, setModelLoaded, setModelLoadProgress, setModelError]);
 
   const segment = useCallback(
-    (video: HTMLVideoElement): Float32Array | null => {
+    (
+      video: HTMLVideoElement,
+    ): {
+      mask: Float32Array;
+      width: number;
+      height: number;
+    } | null => {
       // Ensure monotonically increasing timestamps
       const now = performance.now();
       if (now <= lastTimestampRef.current) {
@@ -47,12 +53,14 @@ export function useSegmentation() {
       if (!result) return null;
 
       // Process: threshold → blur → temporal smooth
-      return processMask(
+      const mask = processMask(
         result.mask,
         result.width,
         result.height,
         segmentationConfig,
       );
+
+      return { mask, width: result.width, height: result.height };
     },
     [segmentationConfig],
   );

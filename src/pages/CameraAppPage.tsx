@@ -2,8 +2,10 @@ import { useRef } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Sparkles, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useClapCamStore } from '@/store/useClapCamStore';
 import { useCamera } from '@/hooks/useCamera';
 import { useBackgroundCalibration } from '@/hooks/useBackgroundCalibration';
+import { useInvisibilityEffect } from '@/hooks/useInvisibilityEffect';
 import { CameraView } from '@/components/camera/CameraView';
 import { CameraControls } from '@/components/camera/CameraControls';
 import { CameraStatus } from '@/components/camera/CameraStatus';
@@ -15,6 +17,7 @@ import { BackgroundPreview } from '@/components/calibration/BackgroundPreview';
 export function CameraAppPage() {
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const {
     videoRef,
@@ -46,6 +49,11 @@ export function CameraAppPage() {
     acceptBackground,
     retakeCalibration,
   } = useBackgroundCalibration(videoRef);
+
+  const { modelLoaded } = useInvisibilityEffect(videoRef, canvasRef);
+
+  const isInvisible = useClapCamStore((s) => s.isInvisible);
+  const micActive = useClapCamStore((s) => s.micActive);
 
   const handleBackToHome = () => {
     stopCamera();
@@ -149,6 +157,7 @@ export function CameraAppPage() {
             {/* Live Camera View */}
             <CameraView
               videoRef={videoRef}
+              canvasRef={canvasRef}
               isActive={isActive}
               isLoading={isLoading}
               error={error}
@@ -235,6 +244,9 @@ export function CameraAppPage() {
             activeDeviceLabel={selectedDevice?.label}
             isCalibrated={isCalibrated}
             capturedBackground={capturedBackground}
+            modelLoaded={modelLoaded}
+            micActive={micActive}
+            isInvisible={isInvisible}
           />
         </motion.div>
       </main>

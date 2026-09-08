@@ -12,6 +12,7 @@ import type { CameraDevice, CameraResolution, CameraStatusType } from '@/types/c
 
 interface CameraViewProps {
   videoRef: React.RefObject<HTMLVideoElement | null>;
+  canvasRef?: React.RefObject<HTMLCanvasElement | null>;
   isActive: boolean;
   isLoading: boolean;
   error: string | null;
@@ -25,6 +26,7 @@ interface CameraViewProps {
 
 export function CameraView({
   videoRef,
+  canvasRef,
   isActive,
   isLoading,
   error,
@@ -59,6 +61,18 @@ export function CameraView({
           isMirrored ? '-scale-x-100' : 'scale-x-100'
         } ${isActive && !isLoading ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
       />
+
+      {/* 1b. Live Compositing Overlay Canvas */}
+      {/* When the invisibility effect is active, this canvas is populated by the
+          compositing pipeline and covers the raw video. It is left transparent
+          (cleared) otherwise so the raw feed shows through unchanged. */}
+      <canvas
+        ref={canvasRef}
+        className={`absolute inset-0 w-full h-full object-cover pointer-events-none ${
+          isActive && !isLoading ? 'z-10 opacity-100' : 'opacity-0 z-0'
+        }`}
+      />
+
 
       {/* 2. Top HUD Overlay (Active Stream State) */}
       {isActive && !isLoading && !error && (
