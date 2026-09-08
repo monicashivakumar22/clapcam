@@ -1,87 +1,242 @@
 import { useRef, useCallback, useEffect } from 'react';
-import { useAppStore } from '@/store/appStore';
-import { CAMERA_CONSTRAINTS } from '@/utils/constants';
+import { useClapCamStore } from '@/store/useClapCamStore';
+import {
+  formatCameraError,
+  getVideoInputDevices,
+  getCameraConstraints,
+  stopMediaStream,
+  isMediaDevicesSupported,
+} from '@/utils/cameraUtils';
 
-/**
- * Hook to manage camera stream lifecycle.
- * Handles getUserMedia, stream attachment to video element, and cleanup.
- */
 export function useCamera() {
   const streamRef = useRef<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const setCameraReady = useAppStore((s) => s.setCameraReady);
-  const setError = useAppStore((s) => s.setError);
 
-  const startCamera = useCallback(async (videoElement: HTMLVideoElement) => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia(CAMERA_CONSTRAINTS);
-      streamRef.current = stream;
-      videoRef.current = videoElement;
+  const {
+    cameraActive,
+    cameraLoading,
+    cameraError,
+    cameraStatus,
+    selectedCameraId,
+    availableDevices,
+    isMirrored,
+    videoDimensions,
+    isFullscreen,
+    setCameraActive,
+    setCameraLoading,
+    setCameraError,
+    setSelectedCameraId,
+    setAvailableDevices,
+    toggleMirror,
+    setVideoDimensions,
+    setIsFullscreen,
+    resetCameraState,
+  } = useClapCamStore();
 
-      videoElement.srcObject = stream;
-      await videoElement.play();
+  /**
+   * Refreshes the list of connected video input hardware devices.
+   */
+  const refreshDevices = useCallback(async () => {
+    const devices = await getVideoInputDevices();
+    setAvailableDevices(devices);
+    return devices;
+  }, [setAvailableDevices]);
 
-      setCameraReady(true);
-      return stream;
-    } catch (err) {
-      if (err instanceof DOMException) {
-        switch (err.name) {
-          case 'NotAllowedError':
-            setError('Camera permission denied. ClapCam AI needs camera access to work.');
-            break;
-          case 'NotFoundError':
-            setError('No camera found. Please connect a camera and refresh.');
-            break;
-          case 'NotReadableError':
-            setError('Camera is in use by another app. Please close other apps.');
-            break;
-          default:
-            setError(`Camera error: ${err.message}`);
-        }
-      } else {
-        setError('Failed to access camera.');
-      }
-      return null;
-    }
-  }, [setCameraReady, setError]);
-
+  /**
+   * Stops the active camera stream and cleans up video bindings.
+   */
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
+      stopMediaStream(streamRef.current);
       streamRef.current = null;
     }
+
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
-    setCameraReady(false);
-  }, [setCameraReady]);
 
-  const captureFrame = useCallback((): ImageData | null => {
-    const video = videoRef.current;
-    if (!video || video.readyState < 2) return null;
+    setCameraActive(false);
+    setVideoDimensions(null);
+  }, [setCameraActive, setVideoDimensions]);
 
-    const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return null;
+  /**
+   * Starts or restarts the camera stream for the given device ID.
+   */
+  const startCamera = useCallback(
+    async (targetVideoElement?: HTMLVideoElement | null, deviceId?: string) => {
+      if (!isMediaDevicesSupported()) {
+        setCameraError(
+          'Your browser does not support camera capture via the MediaDevices API. Please try a modern browser like Chrome, Edge, or Firefox.',
+        );
+        return null;
+      }
 
-    ctx.drawImage(video, 0, 0);
-    return ctx.getImageData(0, 0, canvas.width, canvas.height);
-  }, []);
+      if (targetVideoElement) {
+        videoRef.current = targetVideoElement;
+      }
 
-  // Cleanup on unmount
+      // Stop any existing stream first
+      if (streamRef.current) {
+        stopMediaStream(streamRef.current);
+        streamRef.current = null;
+      }
+
+      setCameraLoading(true);
+      setCameraError(null);
+
+      const targetDeviceId = deviceId || selectedCameraId;
+
+      try {
+        const constraints = getCameraConstraints(targetDeviceId || undefined);
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+
+        streamRef.current = stream;
+
+        // If targetDeviceId wasn't explicitly chosen, find active device track ID
+        const videoTrack = stream.getVideoTracks()[0];
+        if (videoTrack) {
+          const settings = videoTrack.getSettings();
+          if (settings.deviceId) {
+            setSelectedCameraId(settings.deviceId);
+          }
+        }
+
+        // Attach stream to video element if available
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+
+          // Listen for metadata to capture real camera dimensions
+          const handleLoadedMetadata = () => {
+            if (videoRef.current) {
+              setVideoDimensions({
+                width: videoRef.current.videoWidth || 1280,
+                height: videoRef.current.videoHeight || 720,
+              });
+              videoRef.current.play().catch((playErr) => {
+                console.warn('[useCamera] Autoplay interrupted:', playErr);
+              });
+            }
+          };
+
+          videoRef.current.onloadedmetadata = handleLoadedMetadata;
+        }
+
+        setCameraActive(true);
+        setCameraLoading(false);
+
+        // Update device list once permission is granted (to retrieve real device labels)
+        await refreshDevices();
+
+        return stream;
+      } catch (err) {
+        const friendlyMessage = formatCameraError(err);
+        setCameraError(friendlyMessage);
+        setCameraLoading(false);
+        stopCamera();
+        return null;
+      }
+    },
+    [
+      selectedCameraId,
+      setCameraLoading,
+      setCameraError,
+      setSelectedCameraId,
+      setVideoDimensions,
+      setCameraActive,
+      refreshDevices,
+      stopCamera,
+    ],
+  );
+
+  /**
+   * Switches to a specific camera hardware input by deviceId.
+   */
+  const switchCamera = useCallback(
+    async (deviceId: string) => {
+      setSelectedCameraId(deviceId);
+      await startCamera(videoRef.current, deviceId);
+    },
+    [setSelectedCameraId, startCamera],
+  );
+
+  /**
+   * Toggles browser fullscreen on the specified video container element.
+   */
+  const toggleFullscreen = useCallback(
+    async (containerElement?: HTMLElement | null) => {
+      const target = containerElement || videoRef.current?.parentElement || document.documentElement;
+
+      try {
+        if (!document.fullscreenElement) {
+          await target.requestFullscreen();
+          setIsFullscreen(true);
+        } else {
+          await document.exitFullscreen();
+          setIsFullscreen(false);
+        }
+      } catch (err) {
+        console.warn('[useCamera] Fullscreen request failed:', err);
+      }
+    },
+    [setIsFullscreen],
+  );
+
+  // Sync fullscreen change events (e.g. user pressing ESC key)
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, [setIsFullscreen]);
+
+  // Listen to physical device changes (connecting/disconnecting webcams)
+  useEffect(() => {
+    if (!isMediaDevicesSupported() || typeof navigator.mediaDevices.addEventListener !== 'function') {
+      return;
+    }
+
+    const handleDeviceChange = () => {
+      refreshDevices();
+    };
+
+    navigator.mediaDevices.addEventListener('devicechange', handleDeviceChange);
+    // Initial device list scan
+    refreshDevices();
+
+    return () => {
+      navigator.mediaDevices.removeEventListener('devicechange', handleDeviceChange);
+    };
+  }, [refreshDevices]);
+
+  // Clean up on component unmount
   useEffect(() => {
     return () => {
       stopCamera();
+      resetCameraState();
     };
-  }, [stopCamera]);
+  }, [stopCamera, resetCameraState]);
 
   return {
     videoRef,
     streamRef,
+    isActive: cameraActive,
+    isLoading: cameraLoading,
+    error: cameraError,
+    status: cameraStatus,
+    devices: availableDevices,
+    selectedDeviceId: selectedCameraId,
+    isMirrored,
+    videoDimensions,
+    isFullscreen,
     startCamera,
     stopCamera,
-    captureFrame,
+    switchCamera,
+    refreshDevices,
+    toggleMirror,
+    toggleFullscreen,
   };
 }

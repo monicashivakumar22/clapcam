@@ -1,3 +1,5 @@
+export * from './camera';
+
 // ─── Effect Modes ───────────────────────────────────────────────────────────
 
 export type EffectMode = 'invisible' | 'ghost' | 'pixel' | 'glitch';
@@ -42,7 +44,23 @@ export interface SegmentationConfig {
   modelType: 'general' | 'landscape';
 }
 
-export interface AppState {
+// ─── Interactive Demo State ────────────────────────────────────────────────
+
+export type DemoStage = 'visible' | 'clapping' | 'glitching' | 'invisible';
+
+export interface DemoState {
+  isDemoInvisible: boolean;
+  demoStage: DemoStage;
+  demoEffectMode: EffectMode;
+  demoAudioLevel: number; // 0 - 100
+  demoSpikeActive: boolean;
+  demoFps: number;
+  triggerDemoClap: () => void;
+  setDemoEffectMode: (mode: EffectMode) => void;
+  resetDemo: () => void;
+}
+
+export interface AppState extends DemoState {
   // ─── Phase & Mode ───────────────────────────────────────────────────
   phase: AppPhase;
   effectMode: EffectMode;
@@ -119,4 +137,47 @@ export interface SegmentationResult {
   width: number;
   height: number;
   timestampMs: number;
+}
+
+// ─── Landing Page Data Models ──────────────────────────────────────────────
+
+export interface FeatureItem {
+  id: string;
+  title: string;
+  badge: string;
+  description: string;
+  metric: string;
+  iconName: 'Cpu' | 'AudioWaveform' | 'Sparkles' | 'ShieldCheck' | 'Layers' | 'Sliders';
+  accent: 'cyan' | 'purple' | 'pink' | 'green';
+}
+
+export interface HowItWorksStep {
+  step: string;
+  number: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  technicalDetails: string[];
+  iconName: 'Camera' | 'Mic' | 'EyeOff';
+  color: string;
+}
+
+export interface TechSpec {
+  category: string;
+  technology: string;
+  description: string;
+  highlight: string;
+}
+
+export interface PrivacyComparison {
+  feature: string;
+  clapcam: string;
+  traditional: string;
+}
+
+export interface LimitationItem {
+  icon: string;
+  title: string;
+  tip: string;
+  severity: 'info' | 'tip' | 'note';
 }

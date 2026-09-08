@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { AppState } from '@/types';
+import type { AppState, EffectMode } from '@/types';
 import { DEFAULT_CLAP_CONFIG, DEFAULT_SEGMENTATION_CONFIG } from '@/utils/constants';
 
 const initialPerformance = {
@@ -9,7 +9,60 @@ const initialPerformance = {
   frameCount: 0,
 };
 
-export const useAppStore = create<AppState>((set) => ({
+let demoTimer: ReturnType<typeof setTimeout> | null = null;
+
+export const useAppStore = create<AppState>((set, get) => ({
+  // ─── Interactive Demo State ─────────────────────────────────────────
+  isDemoInvisible: false,
+  demoStage: 'visible',
+  demoEffectMode: 'invisible',
+  demoAudioLevel: 15,
+  demoSpikeActive: false,
+  demoFps: 60,
+
+  triggerDemoClap: () => {
+    if (demoTimer) clearTimeout(demoTimer);
+
+    const currentlyInvisible = get().isDemoInvisible;
+
+    // Stage 1: Clap impulse & audio spike
+    set({
+      demoStage: 'clapping',
+      demoSpikeActive: true,
+      demoAudioLevel: 98,
+    });
+
+    // Stage 2: Glitch / neural mask calculation
+    demoTimer = setTimeout(() => {
+      set({
+        demoStage: 'glitching',
+        demoAudioLevel: 55,
+      });
+
+      // Stage 3: Invisibility transition resolved
+      demoTimer = setTimeout(() => {
+        set({
+          isDemoInvisible: !currentlyInvisible,
+          demoStage: !currentlyInvisible ? 'invisible' : 'visible',
+          demoSpikeActive: false,
+          demoAudioLevel: 18,
+        });
+      }, 450);
+    }, 250);
+  },
+
+  setDemoEffectMode: (demoEffectMode: EffectMode) => set({ demoEffectMode }),
+
+  resetDemo: () => {
+    if (demoTimer) clearTimeout(demoTimer);
+    set({
+      isDemoInvisible: false,
+      demoStage: 'visible',
+      demoAudioLevel: 15,
+      demoSpikeActive: false,
+    });
+  },
+
   // ─── Phase & Mode ───────────────────────────────────────────────────
   phase: 'initializing',
   effectMode: 'invisible',

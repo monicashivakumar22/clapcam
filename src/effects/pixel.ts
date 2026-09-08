@@ -13,23 +13,16 @@ export function applyPixelEffect(
   params: EffectParams,
   blockSize: number = 12,
 ): void {
-  const { videoFrame, backgroundFrame, mask, width, height } = params;
+  const { videoFrame, mask, width, height } = params;
   const videoData = videoFrame.data;
-  const bgData = backgroundFrame.data;
   const pixelCount = width * height;
 
   // First pass: copy background/video as-is
   for (let i = 0; i < pixelCount; i++) {
     const px = i * 4;
-    if (mask[i] <= 0.3) {
-      output[px] = videoData[px];
-      output[px + 1] = videoData[px + 1];
-      output[px + 2] = videoData[px + 2];
-    } else {
-      output[px] = videoData[px];
-      output[px + 1] = videoData[px + 1];
-      output[px + 2] = videoData[px + 2];
-    }
+    output[px] = videoData[px];
+    output[px + 1] = videoData[px + 1];
+    output[px + 2] = videoData[px + 2];
     output[px + 3] = 255;
   }
 

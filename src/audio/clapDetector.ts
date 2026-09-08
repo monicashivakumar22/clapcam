@@ -15,7 +15,7 @@ export class ClapDetector {
   private audioContext: AudioContext | null = null;
   private analyser: AnalyserNode | null = null;
   private source: MediaStreamAudioSourceNode | null = null;
-  private frequencyData: Uint8Array | null = null;
+  private frequencyData: Uint8Array<ArrayBuffer> | null = null;
   private animationId: number | null = null;
   private config: ClapConfig;
   private callback: ClapCallback | null = null;
@@ -41,7 +41,7 @@ export class ClapDetector {
     this.source = this.audioContext.createMediaStreamSource(stream);
     this.source.connect(this.analyser);
 
-    this.frequencyData = new Uint8Array(this.analyser.frequencyBinCount);
+    this.frequencyData = new Uint8Array(new ArrayBuffer(this.analyser.frequencyBinCount));
     this.running = true;
 
     this.detect();

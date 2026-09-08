@@ -1,4 +1,4 @@
-import { Shield, Github } from 'lucide-react';
+import { Shield, Code2 } from 'lucide-react';
 
 export function Footer() {
   return (
@@ -14,9 +14,9 @@ export function Footer() {
             href="https://github.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:text-accent-cyan transition-colors"
+            className="hover:text-accent-cyan transition-colors flex items-center gap-1"
           >
-            <Github className="w-4 h-4" />
+            <Code2 className="w-4 h-4" />
           </a>
         </div>
       </div>
