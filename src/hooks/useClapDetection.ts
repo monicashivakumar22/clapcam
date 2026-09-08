@@ -1,7 +1,7 @@
 import { useRef, useCallback, useEffect } from 'react';
 import { ClapDetector } from '@/audio/clapDetector';
 import { initAudio, destroyAudio } from '@/audio/audioManager';
-import { useAppStore } from '@/store/appStore';
+import { useClapCamStore } from '@/store/useClapCamStore';
 import type { ClapEvent } from '@/types';
 
 /**
@@ -10,16 +10,16 @@ import type { ClapEvent } from '@/types';
  */
 export function useClapDetection() {
   const detectorRef = useRef<ClapDetector | null>(null);
-  const clapConfig = useAppStore((s) => s.clapConfig);
-  const setMicReady = useAppStore((s) => s.setMicReady);
-  const toggleVisibility = useAppStore((s) => s.toggleVisibility);
-  const setError = useAppStore((s) => s.setError);
+  const clapConfig = useClapCamStore((s) => s.clapConfig);
+  const setMicActive = useClapCamStore((s) => s.setMicActive);
+  const toggleInvisibility = useClapCamStore((s) => s.toggleInvisibility);
+  const setMicError = useClapCamStore((s) => s.setMicError);
 
   const onClap = useCallback(
     (_event: ClapEvent) => {
-      toggleVisibility();
+      toggleInvisibility();
     },
-    [toggleVisibility],
+    [toggleInvisibility],
   );
 
   const startDetection = useCallback(async () => {
@@ -28,11 +28,11 @@ export function useClapDetection() {
       const detector = new ClapDetector(clapConfig);
       await detector.start(stream, onClap);
       detectorRef.current = detector;
-      setMicReady(true);
+      setMicActive(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to start clap detection.');
+      setMicError(err instanceof Error ? err.message : 'Failed to start clap detection.');
     }
-  }, [clapConfig, onClap, setMicReady, setError]);
+  }, [clapConfig, onClap, setMicActive, setMicError]);
 
   const stopDetection = useCallback(() => {
     if (detectorRef.current) {
@@ -40,8 +40,8 @@ export function useClapDetection() {
       detectorRef.current = null;
     }
     destroyAudio();
-    setMicReady(false);
-  }, [setMicReady]);
+    setMicActive(false);
+  }, [setMicActive]);
 
   // Update detector config at runtime
   useEffect(() => {

@@ -9,7 +9,7 @@ import {
   CheckCircle2,
   Zap,
 } from 'lucide-react';
-import { useAppStore } from '@/store/appStore';
+import { useDemoStore } from '@/store/useDemoStore';
 import type { EffectMode } from '@/types';
 
 export function CameraPreviewMockup() {
@@ -21,7 +21,7 @@ export function CameraPreviewMockup() {
     triggerDemoClap,
     setDemoEffectMode,
     resetDemo,
-  } = useAppStore();
+  } = useDemoStore();
 
   const [simulatedAudioBars, setSimulatedAudioBars] = useState<number[]>(
     new Array(16).fill(12),

@@ -1,8 +1,8 @@
 import { Cpu, Camera, Mic, Activity, HardDrive, ShieldCheck, Zap } from 'lucide-react';
-import { useAppStore } from '@/store/appStore';
+import { useClapCamStore } from '@/store/useClapCamStore';
 
 export function SystemStatus() {
-  const { performance } = useAppStore();
+  const performance = useClapCamStore((s) => s.performance);
 
   const subsystems = [
     {

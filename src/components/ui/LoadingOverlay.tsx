@@ -1,9 +1,9 @@
 import { motion } from 'framer-motion';
 import { Cpu, Loader2 } from 'lucide-react';
-import { useAppStore } from '@/store/appStore';
+import { useClapCamStore } from '@/store/useClapCamStore';
 
 export function LoadingOverlay() {
-  const progress = useAppStore((s) => s.modelLoadProgress);
+  const progress = useClapCamStore((s) => s.modelLoadProgress);
 
   return (
     <div className="flex flex-col items-center gap-6 py-12">

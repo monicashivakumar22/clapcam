@@ -4,14 +4,7 @@ export * from './camera';
 
 export type EffectMode = 'invisible' | 'ghost' | 'pixel' | 'glitch';
 
-// ─── Application State ─────────────────────────────────────────────────────
-
-export type AppPhase =
-  | 'initializing'    // Loading models and requesting permissions
-  | 'calibrating'     // User must step out of frame to capture background
-  | 'ready'           // Background captured, waiting for clap to activate
-  | 'active'          // Effect is currently applied (user is "invisible")
-  | 'error';          // Unrecoverable error state
+// ─── Performance ───────────────────────────────────────────────────────────
 
 export interface PerformanceMetrics {
   fps: number;
@@ -58,48 +51,6 @@ export interface DemoState {
   triggerDemoClap: () => void;
   setDemoEffectMode: (mode: EffectMode) => void;
   resetDemo: () => void;
-}
-
-export interface AppState extends DemoState {
-  // ─── Phase & Mode ───────────────────────────────────────────────────
-  phase: AppPhase;
-  effectMode: EffectMode;
-  isVisible: boolean; // true = normal view, false = effect applied
-
-  // ─── Media ──────────────────────────────────────────────────────────
-  cameraReady: boolean;
-  micReady: boolean;
-  backgroundFrame: ImageData | null;
-
-  // ─── AI ─────────────────────────────────────────────────────────────
-  modelLoaded: boolean;
-  modelLoadProgress: number; // 0-100
-
-  // ─── Performance ────────────────────────────────────────────────────
-  performance: PerformanceMetrics;
-
-  // ─── Configuration ──────────────────────────────────────────────────
-  clapConfig: ClapConfig;
-  segmentationConfig: SegmentationConfig;
-
-  // ─── Error ──────────────────────────────────────────────────────────
-  error: string | null;
-
-  // ─── Actions ────────────────────────────────────────────────────────
-  setPhase: (phase: AppPhase) => void;
-  setEffectMode: (mode: EffectMode) => void;
-  toggleVisibility: () => void;
-  setIsVisible: (visible: boolean) => void;
-  setCameraReady: (ready: boolean) => void;
-  setMicReady: (ready: boolean) => void;
-  setBackgroundFrame: (frame: ImageData | null) => void;
-  setModelLoaded: (loaded: boolean) => void;
-  setModelLoadProgress: (progress: number) => void;
-  updatePerformance: (metrics: Partial<PerformanceMetrics>) => void;
-  setClapConfig: (config: Partial<ClapConfig>) => void;
-  setSegmentationConfig: (config: Partial<SegmentationConfig>) => void;
-  setError: (error: string | null) => void;
-  reset: () => void;
 }
 
 // ─── Rendering Types ────────────────────────────────────────────────────────

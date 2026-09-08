@@ -1,5 +1,5 @@
 import { useRef, useCallback, useEffect } from 'react';
-import { useAppStore } from '@/store/appStore';
+import { useClapCamStore } from '@/store/useClapCamStore';
 import { initSegmenter, segmentFrame, destroySegmenter } from '@/ai/segmenter';
 import { processMask, resetTemporalBuffer } from '@/ai/maskProcessor';
 import type { SegmentationResult } from '@/types';
@@ -9,10 +9,10 @@ import type { SegmentationResult } from '@/types';
  * Handles model loading, per-frame segmentation, and mask processing.
  */
 export function useSegmentation() {
-  const segmentationConfig = useAppStore((s) => s.segmentationConfig);
-  const setModelLoaded = useAppStore((s) => s.setModelLoaded);
-  const setModelLoadProgress = useAppStore((s) => s.setModelLoadProgress);
-  const setError = useAppStore((s) => s.setError);
+  const segmentationConfig = useClapCamStore((s) => s.segmentationConfig);
+  const setModelLoaded = useClapCamStore((s) => s.setModelLoaded);
+  const setModelLoadProgress = useClapCamStore((s) => s.setModelLoadProgress);
+  const setModelError = useClapCamStore((s) => s.setModelError);
   const lastTimestampRef = useRef(0);
 
   const loadModel = useCallback(async () => {
@@ -23,11 +23,11 @@ export function useSegmentation() {
       });
       setModelLoaded(true);
     } catch (err) {
-      setError(
+      setModelError(
         `Failed to load segmentation model: ${err instanceof Error ? err.message : 'Unknown error'}`,
       );
     }
-  }, [segmentationConfig.modelType, setModelLoaded, setModelLoadProgress, setError]);
+  }, [segmentationConfig.modelType, setModelLoaded, setModelLoadProgress, setModelError]);
 
   const segment = useCallback(
     (video: HTMLVideoElement): Float32Array | null => {

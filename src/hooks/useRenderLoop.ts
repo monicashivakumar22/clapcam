@@ -1,5 +1,5 @@
 import { useRef, useCallback } from 'react';
-import { useAppStore } from '@/store/appStore';
+import { useClapCamStore } from '@/store/useClapCamStore';
 
 /**
  * Hook to manage the requestAnimationFrame render loop.
@@ -11,7 +11,7 @@ export function useRenderLoop() {
   const lastFrameTimeRef = useRef(0);
   const fpsFrameCountRef = useRef(0);
   const fpsLastTimeRef = useRef(performance.now());
-  const updatePerformance = useAppStore((s) => s.updatePerformance);
+  const updatePerformance = useClapCamStore((s) => s.updatePerformance);
 
   const startLoop = useCallback(
     (frameCallback: (timestamp: number) => void) => {
