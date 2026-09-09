@@ -1,1 +1,879 @@
-﻿
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ClapCam AI — Clap to Disappear</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #070913;
+      color: #f3f4f6;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow-x: hidden;
+    }
+    body::before, body::after {
+      content: '';
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(140px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    body::before { width: 50vw; height: 50vw; top: -20%; left: -10%; background: rgba(0, 240, 255, 0.12); }
+    body::after { width: 50vw; height: 50vw; bottom: -20%; right: -10%; background: rgba(168, 85, 247, 0.12); }
+
+    header {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(7, 9, 19, 0.85);
+      backdrop-filter: blur(20px);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo-badge {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #00f0ff, #a855f7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+    }
+    .logo-text {
+      font-size: 19px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(90deg, #ffffff, #d1d5db);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .logo-text span {
+      background: linear-gradient(90deg, #00f0ff, #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .pills { display: flex; gap: 8px; align-items: center; }
+    .pill {
+      padding: 5px 14px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-weight: 600;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.05);
+      color: #9ca3af;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .pill .dot { width: 7px; height: 7px; border-radius: 50%; background: #6b7280; }
+    .pill.on { background: rgba(0, 240, 255, 0.12); border-color: rgba(0, 240, 255, 0.5); color: #00f0ff; }
+    .pill.on .dot { background: #00f0ff; box-shadow: 0 0 8px #00f0ff; }
+    .pill.inv { background: rgba(236, 72, 153, 0.2); border-color: rgba(236, 72, 153, 0.6); color: #f472b6; }
+    .pill.inv .dot { background: #ec4899; box-shadow: 0 0 10px #ec4899; }
+
+    main {
+      position: relative;
+      z-index: 5;
+      width: 100%;
+      max-width: 980px;
+      padding: 28px 20px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .vp-container {
+      position: relative;
+      border-radius: 20px;
+      overflow: hidden;
+      background: #0e1222;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+      aspect-ratio: 16/9;
+      transition: box-shadow 0.4s, border-color 0.4s;
+    }
+    .vp-container.glow-invisible {
+      border-color: rgba(236, 72, 153, 0.8);
+      box-shadow: 0 0 60px rgba(236, 72, 153, 0.4), 0 0 0 2px rgba(236, 72, 153, 0.6);
+    }
+    .vp-container.glow-clap {
+      border-color: rgba(0, 240, 255, 0.9);
+      box-shadow: 0 0 70px rgba(0, 240, 255, 0.5);
+    }
+
+    video, canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1);
+    }
+    canvas {
+      z-index: 2;
+      opacity: 0;
+      transition: opacity 0.15s ease-out;
+    }
+
+    .cam-placeholder {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      color: #9ca3af;
+      background: #0e1222;
+    }
+    .cam-placeholder .spinner {
+      width: 44px;
+      height: 44px;
+      border: 3px solid rgba(0, 240, 255, 0.2);
+      border-top-color: #00f0ff;
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .countdown-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 15;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(5, 8, 18, 0.75);
+      backdrop-filter: blur(8px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .countdown-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .countdown-number {
+      font-size: 96px;
+      font-weight: 900;
+      background: linear-gradient(135deg, #00f0ff, #ec4899);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1;
+      transform: scale(0.6);
+      animation: countPulse 0.9s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+    }
+    .countdown-text {
+      font-size: 18px;
+      font-weight: 600;
+      color: #e5e7eb;
+      margin-top: 10px;
+    }
+    @keyframes countPulse {
+      0% { transform: scale(0.5); opacity: 0; }
+      50% { transform: scale(1.1); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .flash-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.08s ease-out;
+    }
+    .flash-overlay.show { opacity: 1; }
+
+    .status-banner {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 25;
+      background: rgba(7, 10, 22, 0.88);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 99px;
+      padding: 10px 24px;
+      font-size: 13px;
+      font-family: ui-monospace, monospace;
+      color: #e5e7eb;
+      white-space: nowrap;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .status-banner b { color: #00f0ff; }
+    .status-banner .badge-inv {
+      background: #ec4899;
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-weight: 700;
+    }
+
+    .controls-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+    }
+    button {
+      padding: 12px 24px;
+      border-radius: 12px;
+      border: none;
+      font-size: 13px;
+      font-family: ui-monospace, monospace;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #00f0ff, #a855f7);
+      color: #050813;
+      box-shadow: 0 4px 20px rgba(0, 240, 255, 0.3);
+    }
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 26px rgba(0, 240, 255, 0.5);
+    }
+    .btn-primary:active:not(:disabled) { transform: translateY(0); }
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #f3f4f6;
+    }
+    .btn-secondary:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.15);
+      transform: translateY(-1px);
+    }
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #f87171;
+    }
+    .btn-danger:hover:not(:disabled) {
+      background: rgba(239, 68, 68, 0.22);
+    }
+    button:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      transform: none !important;
+      box-shadow: none !important;
+    }
+
+    .slider-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 14px;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 12px;
+      font-family: ui-monospace, monospace;
+      color: #9ca3af;
+    }
+    .slider-card input[type=range] {
+      flex: 1;
+      height: 6px;
+      border-radius: 6px;
+      accent-color: #00f0ff;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.1);
+    }
+    .slider-card .val-box {
+      color: #00f0ff;
+      font-weight: 700;
+      font-size: 14px;
+      width: 40px;
+      text-align: right;
+    }
+
+    .telemetry-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+    }
+    .stat-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 14px;
+      padding: 14px 16px;
+      font-family: ui-monospace, monospace;
+      font-size: 12px;
+    }
+    .stat-card .label { color: #6b7280; margin-bottom: 6px; }
+    .stat-card .stat-val { color: #f3f4f6; font-weight: 700; font-size: 13px; }
+    .stat-card .stat-val.active { color: #34d399; }
+    .stat-card .stat-val.pink { color: #f472b6; }
+    .stat-card .stat-val.cyan { color: #00f0ff; }
+    .stat-card .stat-val.muted { color: #6b7280; }
+
+    .bars-container {
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 28px;
+    }
+    .audio-bar {
+      flex: 1;
+      border-radius: 2px;
+      background: #1f293d;
+      min-height: 3px;
+      transition: height 0.05s ease-out, background 0.15s;
+    }
+    .audio-bar.active { background: #a855f7; }
+    .audio-bar.clap { background: #00f0ff; box-shadow: 0 0 6px #00f0ff; }
+
+    .workflow-steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+    }
+    .wf-step {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 14px;
+      padding: 16px;
+      font-size: 12px;
+      font-family: ui-monospace, monospace;
+    }
+    .wf-step .num {
+      font-size: 20px;
+      font-weight: 900;
+      margin-bottom: 6px;
+      background: linear-gradient(135deg, #00f0ff, #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .wf-step .title { font-weight: 700; color: #f3f4f6; margin-bottom: 4px; font-size: 13px; }
+    .wf-step .desc { color: #6b7280; line-height: 1.5; font-size: 11px; }
+
+    footer {
+      position: relative;
+      z-index: 5;
+      margin-top: auto;
+      padding: 20px;
+      text-align: center;
+      font-size: 11px;
+      font-family: ui-monospace, monospace;
+      color: #4b5563;
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="logo-badge">👏</div>
+    <div class="logo-text">ClapCam <span>AI</span></div>
+  </div>
+  <div class="pills">
+    <div class="pill" id="pCam"><div class="dot"></div>Camera Off</div>
+    <div class="pill" id="pMic"><div class="dot"></div>Mic Off</div>
+    <div class="pill" id="pState"><div class="dot"></div>Visible</div>
+  </div>
+</header>
+
+<main>
+
+  <!-- Viewport -->
+  <div class="vp-container" id="vp">
+    <video id="vid" autoplay playsinline muted></video>
+    <canvas id="cv"></canvas>
+    <div class="cam-placeholder" id="ph">
+      <div class="spinner"></div>
+      <p>Initializing camera feed…</p>
+    </div>
+    <div class="countdown-overlay" id="cdOverlay">
+      <div class="countdown-number" id="cdNum">3</div>
+      <div class="countdown-text">Step out of camera view!</div>
+    </div>
+    <div class="flash-overlay" id="fl"></div>
+    <div class="status-banner" id="bn">
+      <span><b>Step 1:</b> Waiting for camera…</span>
+    </div>
+  </div>
+
+  <!-- Main Controls -->
+  <div class="controls-bar">
+    <button class="btn-primary" id="bMic" disabled>🎙 Arm Microphone</button>
+    <button class="btn-secondary" id="bCap" disabled>📸 Capture Background (3s)</button>
+    <button class="btn-secondary" id="bTog" disabled>👻 Disappear</button>
+    <button class="btn-danger" id="bRst">↺ Reset</button>
+  </div>
+
+  <!-- Clap Sensitivity -->
+  <div class="slider-card">
+    <span>Clap Trigger Sensitivity</span>
+    <input type="range" id="sSlider" min="30" max="180" value="85" />
+    <span class="val-box" id="sVal">85</span>
+    <span style="color:#6b7280; font-size:11px;">(Lower = triggers with lighter clap)</span>
+  </div>
+
+  <!-- Telemetry Dashboard -->
+  <div class="telemetry-grid">
+    <div class="stat-card">
+      <div class="label">📷 Video Stream</div>
+      <div class="stat-val muted" id="cCam">Off</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">🎙 Mic Status</div>
+      <div class="stat-val muted" id="cMic">Off</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">🖼 Background Plate</div>
+      <div class="stat-val muted" id="cBg">None captured</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">👁 Visibility State</div>
+      <div class="stat-val muted" id="cSt">Visible</div>
+    </div>
+    <div class="stat-card" style="grid-column: span 2;">
+      <div class="label">⚡ 2–4 kHz Clap Frequency Energy</div>
+      <div class="bars-container" id="barsEl"></div>
+    </div>
+    <div class="stat-card" style="grid-column: span 2;">
+      <div class="label">🔊 Last Clap Detection</div>
+      <div class="stat-val muted" id="cClap">None yet — arm mic &amp; clap!</div>
+    </div>
+  </div>
+
+  <!-- Quick Workflow Steps -->
+  <div class="workflow-steps">
+    <div class="wf-step">
+      <div class="num">01</div>
+      <div class="title">Camera Auto-Starts</div>
+      <div class="desc">Webcam feed initializes automatically upon loading.</div>
+    </div>
+    <div class="wf-step">
+      <div class="num">02</div>
+      <div class="title">Arm Microphone</div>
+      <div class="desc">Click "Arm Microphone" to activate 2–4 kHz clap listening.</div>
+    </div>
+    <div class="wf-step">
+      <div class="num">03</div>
+      <div class="title">Capture Empty Scene</div>
+      <div class="desc">Step out of view or click capture to save background plate.</div>
+    </div>
+    <div class="wf-step">
+      <div class="num">04</div>
+      <div class="title">Clap to Disappear!</div>
+      <div class="desc">Clap once to vanish instantly. Clap again to reappear.</div>
+    </div>
+  </div>
+
+</main>
+
+<footer>ClapCam AI &bull; Web Audio API + HTML5 Canvas &bull; 100% Client-Side Processing</footer>
+
+<script>
+// ── Application State ────────────────────────────────────────────────────────
+const S = {
+  camOk: false,
+  micOk: false,
+  bgCaptured: false,
+  invisible: false,
+  lastClapTime: 0,
+  threshold: 85,
+  cooldownMs: 650,
+  consecutiveFrames: 2,
+  consecCounter: 0,
+  countdownRunning: false
+};
+
+// ── DOM References ────────────────────────────────────────────────────────────
+const vid       = document.getElementById('vid');
+const cv        = document.getElementById('cv');
+const ctx       = cv.getContext('2d', { willReadFrequently: true });
+const ph        = document.getElementById('ph');
+const fl        = document.getElementById('fl');
+const bn        = document.getElementById('bn');
+const vp        = document.getElementById('vp');
+const bMic      = document.getElementById('bMic');
+const bCap      = document.getElementById('bCap');
+const bTog      = document.getElementById('bTog');
+const bRst      = document.getElementById('bRst');
+const pCam      = document.getElementById('pCam');
+const pMic      = document.getElementById('pMic');
+const pSt       = document.getElementById('pState');
+const cCam      = document.getElementById('cCam');
+const cMic      = document.getElementById('cMic');
+const cBg       = document.getElementById('cBg');
+const cSt       = document.getElementById('cSt');
+const cClap     = document.getElementById('cClap');
+const sSlider   = document.getElementById('sSlider');
+const sVal      = document.getElementById('sVal');
+const barsEl    = document.getElementById('barsEl');
+const cdOverlay = document.getElementById('cdOverlay');
+const cdNum     = document.getElementById('cdNum');
+
+// ── Build Audio Frequency Bars ────────────────────────────────────────────────
+const NBARS = 28;
+const bars = Array.from({ length: NBARS }, () => {
+  const b = document.createElement('div');
+  b.className = 'audio-bar';
+  barsEl.appendChild(b);
+  return b;
+});
+
+// ── Background Storage ────────────────────────────────────────────────────────
+let bgImageData = null;
+
+// ── Synthesized Sound FX ──────────────────────────────────────────────────────
+function playChime(freq = 880, duration = 0.12, type = 'sine') {
+  try {
+    const actx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const osc = actx.createOscillator();
+    const gain = actx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, actx.currentTime);
+    gain.gain.setValueAtTime(0.2, actx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(actx.destination);
+    osc.start();
+    osc.stop(actx.currentTime + duration);
+  } catch(e) {}
+}
+
+// ── 1. Camera Initialization ──────────────────────────────────────────────────
+async function initCamera() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
+      audio: false
+    });
+    vid.srcObject = stream;
+    await new Promise(res => vid.addEventListener('loadedmetadata', res, { once: true }));
+    cv.width  = vid.videoWidth;
+    cv.height = vid.videoHeight;
+    ph.style.display = 'none';
+    S.camOk = true;
+
+    setPill(pCam, 'Camera Live', 'on');
+    setStat(cCam, `${vid.videoWidth} × ${vid.videoHeight} Live`, 'active');
+    bMic.disabled = false;
+    bCap.disabled = false;
+    updateBanner();
+    requestAnimationFrame(renderLoop);
+  } catch(err) {
+    ph.innerHTML = `<p style="color:#ef4444; text-align:center;">Camera access denied or unavailable.<br/><span style="font-size:12px; color:#9ca3af;">Please allow camera permissions and refresh.</span></p>`;
+  }
+}
+
+// ── 2. Canvas Render Loop ─────────────────────────────────────────────────────
+function renderLoop() {
+  if (!S.camOk) return;
+
+  if (S.invisible && bgImageData) {
+    // Both <video> and <canvas> have CSS transform: scaleX(-1).
+    // Drawing bgImageData raw onto canvas preserves exact alignment with video!
+    if (cv.width !== bgImageData.width)   cv.width  = bgImageData.width;
+    if (cv.height !== bgImageData.height) cv.height = bgImageData.height;
+    ctx.putImageData(bgImageData, 0, 0);
+    cv.style.opacity = '1';
+  } else {
+    cv.style.opacity = '0';
+  }
+
+  requestAnimationFrame(renderLoop);
+}
+
+// ── 3. Background Capture with 3s Countdown ───────────────────────────────────
+function startCaptureCountdown() {
+  if (!S.camOk || S.countdownRunning) return;
+  S.countdownRunning = true;
+  cdOverlay.classList.add('active');
+
+  let count = 3;
+  cdNum.textContent = count;
+  playChime(600, 0.1);
+
+  const timer = setInterval(() => {
+    count--;
+    if (count > 0) {
+      cdNum.textContent = count;
+      playChime(600, 0.1);
+    } else {
+      clearInterval(timer);
+      cdOverlay.classList.remove('active');
+      S.countdownRunning = false;
+      captureBackground();
+      playChime(1200, 0.25, 'triangle');
+    }
+  }, 1000);
+}
+
+function captureBackground() {
+  if (!S.camOk || vid.readyState < 2) return;
+  const w = vid.videoWidth;
+  const h = vid.videoHeight;
+
+  // Offscreen canvas to capture pure video pixels
+  const offscreen = document.createElement('canvas');
+  offscreen.width = w;
+  offscreen.height = h;
+  const offCtx = offscreen.getContext('2d');
+  offCtx.drawImage(vid, 0, 0, w, h);
+  bgImageData = offCtx.getImageData(0, 0, w, h);
+
+  cv.width = w;
+  cv.height = h;
+  S.bgCaptured = true;
+
+  setStat(cBg, `${w} × ${h} Plate Captured ✓`, 'active');
+  bTog.disabled = false;
+  flashScreen('rgba(52, 211, 153, 0.35)');
+  updateBanner();
+}
+
+// ── 4. Toggle Invisibility ────────────────────────────────────────────────────
+function toggleInvisibility() {
+  if (!S.bgCaptured) {
+    startCaptureCountdown();
+    return;
+  }
+  S.invisible = !S.invisible;
+
+  if (S.invisible) {
+    vp.className = 'vp-container glow-invisible';
+    setPill(pSt, '👻 INVISIBLE', 'inv');
+    setStat(cSt, 'Invisible 👻 (Background Plate Active)', 'pink');
+    bTog.innerHTML = '👁 Reappear';
+    flashScreen('rgba(236, 72, 153, 0.4)');
+    playChime(1040, 0.2, 'sine');
+  } else {
+    vp.className = 'vp-container';
+    setPill(pSt, 'Visible', 'on');
+    setStat(cSt, 'Visible 👁', 'active');
+    bTog.innerHTML = '👻 Disappear';
+    flashScreen('rgba(0, 240, 255, 0.35)');
+    playChime(780, 0.2, 'sine');
+  }
+  updateBanner();
+}
+
+// ── 5. Clap Detection Trigger ─────────────────────────────────────────────────
+function onClapDetected(energy) {
+  S.lastClapTime = Date.now();
+  setStat(cClap, `Energy ${Math.round(energy)} @ ${new Date().toLocaleTimeString()}`, 'cyan');
+
+  // Pulse flash
+  flashScreen('rgba(0, 240, 255, 0.45)');
+  vp.classList.add('glow-clap');
+  setTimeout(() => vp.classList.remove('glow-clap'), 300);
+
+  if (!S.bgCaptured) {
+    // If background not captured yet, capture it now!
+    captureBackground();
+  } else {
+    // Toggle invisibility state
+    toggleInvisibility();
+  }
+}
+
+// ── 6. Audio Engine & Clap Detection ──────────────────────────────────────────
+let audioCtx = null;
+let analyser = null;
+let micStream = null;
+let freqData = null;
+let audioRafId = null;
+
+async function startMicrophone() {
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+      video: false
+    });
+
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') {
+      await audioCtx.resume();
+    }
+
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 2048;
+    analyser.smoothingTimeConstant = 0.2;
+
+    const source = audioCtx.createMediaStreamSource(micStream);
+    source.connect(analyser);
+
+    freqData = new Uint8Array(analyser.frequencyBinCount);
+    S.micOk = true;
+
+    setPill(pMic, '🎙 Mic Armed', 'on');
+    setStat(cMic, 'Active (2–4 kHz Gate)', 'active');
+    bMic.innerHTML = '🔇 Disarm Mic';
+    bMic.className = 'btn-secondary';
+    updateBanner();
+    processAudioLoop();
+  } catch(err) {
+    alert('Microphone access was denied. Please allow microphone permissions.');
+  }
+}
+
+function stopMicrophone() {
+  if (audioRafId) cancelAnimationFrame(audioRafId);
+  if (micStream) micStream.getTracks().forEach(t => t.stop());
+  if (audioCtx) audioCtx.close();
+
+  S.micOk = false;
+  setPill(pMic, 'Mic Off', '');
+  setStat(cMic, 'Off', 'muted');
+  bMic.innerHTML = '🎙 Arm Microphone';
+  bMic.className = 'btn-primary';
+
+  bars.forEach(b => {
+    b.style.height = '3px';
+    b.className = 'audio-bar';
+  });
+  updateBanner();
+}
+
+function processAudioLoop() {
+  if (!S.micOk || !analyser) return;
+  analyser.getByteFrequencyData(freqData);
+
+  // Focus band: 2000 Hz to 4000 Hz (characteristic frequency spectrum of human claps)
+  const sampleRate = audioCtx.sampleRate;
+  const binCount   = analyser.frequencyBinCount;
+  const binWidth   = sampleRate / (binCount * 2);
+  const lowBin     = Math.floor(2000 / binWidth);
+  const highBin    = Math.min(Math.ceil(4000 / binWidth), binCount - 1);
+
+  let bandSum = 0;
+  let bandCount = 0;
+  for (let i = lowBin; i <= highBin; i++) {
+    bandSum += freqData[i];
+    bandCount++;
+  }
+  const energy = bandCount > 0 ? bandSum / bandCount : 0;
+
+  // Visualizer Bars
+  const step = Math.floor(binCount / NBARS);
+  const isClapSpike = energy > S.threshold;
+  for (let i = 0; i < NBARS; i++) {
+    const rawVal = freqData[i * step] || 0;
+    const barHeight = Math.max(3, (rawVal / 255) * 28);
+    bars[i].style.height = `${barHeight}px`;
+    bars[i].className = 'audio-bar' + (isClapSpike ? ' clap' : ' active');
+  }
+
+  // Clap Trigger Logic
+  const now = Date.now();
+  if (energy > S.threshold) {
+    S.consecCounter++;
+    if (S.consecCounter >= S.consecutiveFrames && now - S.lastClapTime > S.cooldownMs) {
+      S.consecCounter = 0;
+      onClapDetected(energy);
+    }
+  } else {
+    S.consecCounter = 0;
+  }
+
+  audioRafId = requestAnimationFrame(processAudioLoop);
+}
+
+// ── UI Helper Utilities ───────────────────────────────────────────────────────
+function flashScreen(rgbaColor) {
+  fl.style.background = rgbaColor;
+  fl.classList.add('show');
+  setTimeout(() => fl.classList.remove('show'), 160);
+}
+
+function setPill(el, text, stateClass) {
+  el.innerHTML = `<div class="dot"></div>${text}`;
+  el.className = 'pill' + (stateClass ? ` ${stateClass}` : '');
+}
+
+function setStat(el, text, stateClass) {
+  el.textContent = text;
+  el.className = `stat-val ${stateClass}`;
+}
+
+function updateBanner() {
+  if (!S.camOk) {
+    bn.innerHTML = '<span><b>Step 1:</b> Waiting for camera permission…</span>';
+  } else if (!S.micOk) {
+    bn.innerHTML = '<span><b>Step 2:</b> Click <b>"Arm Microphone"</b> to enable clap trigger</span>';
+  } else if (!S.bgCaptured) {
+    bn.innerHTML = '<span><b>Step 3:</b> Step out of view → 👏 <b>Clap</b> (or click Capture)</span>';
+  } else if (!S.invisible) {
+    bn.innerHTML = '<span><b>Ready!</b> 👏 <b>Clap</b> to disappear!</span>';
+  } else {
+    bn.innerHTML = '<span class="badge-inv">INVISIBLE</span> <span>You are invisible — 👏 <b>Clap</b> to reappear</span>';
+  }
+}
+
+function resetAll() {
+  stopMicrophone();
+  S.bgCaptured = false;
+  S.invisible = false;
+  bgImageData = null;
+  cv.style.opacity = '0';
+  vp.className = 'vp-container';
+
+  setPill(pSt, 'Visible', '');
+  setStat(cBg, 'None captured', 'muted');
+  setStat(cSt, 'Visible', 'muted');
+  setStat(cClap, 'None yet — arm mic & clap!', 'muted');
+
+  bTog.disabled = true;
+  bTog.innerHTML = '👻 Disappear';
+  bMic.disabled = !S.camOk;
+  updateBanner();
+}
+
+// ── Event Listeners ───────────────────────────────────────────────────────────
+bMic.addEventListener('click', () => S.micOk ? stopMicrophone() : startMicrophone());
+bCap.addEventListener('click', startCaptureCountdown);
+bTog.addEventListener('click', toggleInvisibility);
+bRst.addEventListener('click', resetAll);
+
+sSlider.addEventListener('input', (e) => {
+  S.threshold = parseInt(e.target.value, 10);
+  sVal.textContent = S.threshold;
+});
+
+// Auto-start camera when page loads
+window.addEventListener('load', () => {
+  updateBanner();
+  initCamera();
+});
+</script>
+</body>
+</html>
