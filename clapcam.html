@@ -2,559 +2,644 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ClapCam AI — Clap to Disappear</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>ClapCam AI — Fullscreen Neural Studio</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+  <!-- MediaPipe Selfie Segmentation -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js" crossorigin="anonymous"></script>
+
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      background: #070913;
-      color: #f3f4f6;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      overflow-x: hidden;
-    }
-    body::before, body::after {
-      content: '';
-      position: fixed;
-      border-radius: 50%;
-      filter: blur(140px);
-      pointer-events: none;
-      z-index: 0;
-    }
-    body::before { width: 50vw; height: 50vw; top: -20%; left: -10%; background: rgba(0, 240, 255, 0.12); }
-    body::after { width: 50vw; height: 50vw; bottom: -20%; right: -10%; background: rgba(168, 85, 247, 0.12); }
-
-    header {
-      position: relative;
-      z-index: 10;
-      width: 100%;
-      padding: 16px 32px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      background: rgba(7, 9, 19, 0.85);
-      backdrop-filter: blur(20px);
-    }
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .logo-badge {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
-      background: linear-gradient(135deg, #00f0ff, #a855f7);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-      box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
-    }
-    .logo-text {
-      font-size: 19px;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-      background: linear-gradient(90deg, #ffffff, #d1d5db);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    .logo-text span {
-      background: linear-gradient(90deg, #00f0ff, #a855f7);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+    :root {
+      --cyan: #00f0ff;
+      --purple: #8b5cf6;
+      --pink: #ec4899;
+      --green: #10b981;
+      --glass-bg: rgba(10, 14, 28, 0.75);
+      --glass-border: rgba(255, 255, 255, 0.12);
     }
 
-    .pills { display: flex; gap: 8px; align-items: center; }
-    .pill {
-      padding: 5px 14px;
-      border-radius: 99px;
-      font-size: 11px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-weight: 600;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      background: rgba(255, 255, 255, 0.05);
-      color: #9ca3af;
-      transition: all 0.3s;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .pill .dot { width: 7px; height: 7px; border-radius: 50%; background: #6b7280; }
-    .pill.on { background: rgba(0, 240, 255, 0.12); border-color: rgba(0, 240, 255, 0.5); color: #00f0ff; }
-    .pill.on .dot { background: #00f0ff; box-shadow: 0 0 8px #00f0ff; }
-    .pill.inv { background: rgba(236, 72, 153, 0.2); border-color: rgba(236, 72, 153, 0.6); color: #f472b6; }
-    .pill.inv .dot { background: #ec4899; box-shadow: 0 0 10px #ec4899; }
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
 
-    main {
-      position: relative;
-      z-index: 5;
-      width: 100%;
-      max-width: 980px;
-      padding: 28px 20px 40px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    .vp-container {
-      position: relative;
-      border-radius: 20px;
+    html, body {
+      width: 100vw;
+      height: 100vh;
       overflow: hidden;
-      background: #0e1222;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
-      aspect-ratio: 16/9;
-      transition: box-shadow 0.4s, border-color 0.4s;
+      background: #000;
+      color: #f8fafc;
+      font-family: 'Plus Jakarta Sans', sans-serif;
     }
-    .vp-container.glow-invisible {
-      border-color: rgba(236, 72, 153, 0.8);
-      box-shadow: 0 0 60px rgba(236, 72, 153, 0.4), 0 0 0 2px rgba(236, 72, 153, 0.6);
-    }
-    .vp-container.glow-clap {
-      border-color: rgba(0, 240, 255, 0.9);
-      box-shadow: 0 0 70px rgba(0, 240, 255, 0.5);
+
+    /* ── Fullscreen Camera & Canvas Layer ────────────────────────────── */
+    #mediaContainer {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+      overflow: hidden;
+      background: #05070f;
     }
 
     video, canvas {
       position: absolute;
       inset: 0;
-      width: 100%;
-      height: 100%;
+      width: 100vw;
+      height: 100vh;
       object-fit: cover;
-      transform: scaleX(-1);
+      transform: scaleX(-1); /* Natural mirror reflection */
     }
-    canvas {
-      z-index: 2;
-      opacity: 0;
-      transition: opacity 0.15s ease-out;
+    video { opacity: 0; pointer-events: none; }
+    canvas#cv { z-index: 2; }
+
+    /* Invisibility glowing ambient border */
+    #mediaContainer.glow-invisible {
+      box-shadow: inset 0 0 100px rgba(236, 72, 153, 0.5), inset 0 0 40px rgba(236, 72, 153, 0.8);
+    }
+    #mediaContainer.glow-clap {
+      box-shadow: inset 0 0 120px rgba(0, 240, 255, 0.7), inset 0 0 50px rgba(0, 240, 255, 0.9);
     }
 
-    .cam-placeholder {
-      position: absolute;
+    /* Flash Transition */
+    #flashLayer {
+      position: fixed;
       inset: 0;
-      z-index: 3;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 14px;
-      color: #9ca3af;
-      background: #0e1222;
-    }
-    .cam-placeholder .spinner {
-      width: 44px;
-      height: 44px;
-      border: 3px solid rgba(0, 240, 255, 0.2);
-      border-top-color: #00f0ff;
-      border-radius: 50%;
-      animation: spin 0.9s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .countdown-overlay {
-      position: absolute;
-      inset: 0;
-      z-index: 15;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: rgba(5, 8, 18, 0.75);
-      backdrop-filter: blur(8px);
+      z-index: 50;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.2s;
+      transition: opacity 0.1s ease-out;
     }
-    .countdown-overlay.active {
-      opacity: 1;
+    #flashLayer.show { opacity: 1; }
+
+    /* ── Floating Sci-Fi HUD ─────────────────────────────────────────── */
+    
+    /* Top Bar */
+    .hud-top {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      right: 20px;
+      z-index: 30;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+
+    .brand-pill {
       pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: 99px;
+      padding: 8px 18px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     }
-    .countdown-number {
-      font-size: 96px;
-      font-weight: 900;
-      background: linear-gradient(135deg, #00f0ff, #ec4899);
+    .brand-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--cyan), var(--purple));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+    }
+    .brand-name {
+      font-family: 'Outfit', sans-serif;
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+    }
+    .brand-name span {
+      background: linear-gradient(90deg, var(--cyan), var(--pink));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      line-height: 1;
-      transform: scale(0.6);
-      animation: countPulse 0.9s cubic-bezier(0.16, 1, 0.3, 1) infinite;
     }
-    .countdown-text {
-      font-size: 18px;
+
+    .top-telemetry {
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .hud-chip {
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: 99px;
+      padding: 8px 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
       font-weight: 600;
-      color: #e5e7eb;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      color: #94a3b8;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+    .hud-chip .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #64748b;
+    }
+    .hud-chip.live {
+      border-color: rgba(16, 185, 129, 0.4);
+      color: var(--green);
+    }
+    .hud-chip.live .dot {
+      background: var(--green);
+      box-shadow: 0 0 10px var(--green);
+      animation: pulse 1.2s infinite;
+    }
+    .hud-chip.inv {
+      background: rgba(236, 72, 153, 0.25);
+      border-color: rgba(236, 72, 153, 0.6);
+      color: #f472b6;
+    }
+    .hud-chip.inv .dot {
+      background: var(--pink);
+      box-shadow: 0 0 12px var(--pink);
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    .btn-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      cursor: pointer;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      transition: all 0.2s;
+    }
+    .btn-icon:hover {
+      background: rgba(255, 255, 255, 0.15);
+      transform: scale(1.05);
+    }
+
+    /* ── Live Audio Energy Bar in HUD ────────────────────────────────── */
+    .audio-visualizer-pill {
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: 99px;
+      padding: 6px 14px;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      height: 38px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+    .eq-stick {
+      width: 3px;
+      height: 4px;
+      border-radius: 2px;
+      background: #334155;
+      min-height: 4px;
+      transition: height 0.05s ease-out, background 0.15s;
+    }
+    .eq-stick.active { background: var(--purple); }
+    .eq-stick.clap { background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
+
+    /* ── Center Prompt / Countdown ───────────────────────────────────── */
+    .center-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    /* Countdown */
+    .cd-wrapper {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      background: rgba(5, 8, 20, 0.85);
+      backdrop-filter: blur(25px);
+      padding: 40px 60px;
+      border-radius: 36px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.8);
+      pointer-events: auto;
+    }
+    .cd-wrapper.active { display: flex; }
+    .cd-number {
+      font-family: 'Outfit', sans-serif;
+      font-size: 140px;
+      font-weight: 900;
+      line-height: 1;
+      background: linear-gradient(135deg, var(--cyan), var(--pink));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: countZoom 0.95s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+    }
+    .cd-subtitle {
+      font-family: 'Outfit', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: #f8fafc;
       margin-top: 10px;
     }
-    @keyframes countPulse {
+    @keyframes countZoom {
       0% { transform: scale(0.5); opacity: 0; }
-      50% { transform: scale(1.1); opacity: 1; }
+      50% { transform: scale(1.15); opacity: 1; }
       100% { transform: scale(1); opacity: 1; }
     }
 
-    .flash-overlay {
-      position: absolute;
-      inset: 0;
-      z-index: 20;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.08s ease-out;
+    /* Permission Unlock Modal */
+    .permission-card {
+      display: none;
+      pointer-events: auto;
+      max-width: 480px;
+      background: rgba(10, 14, 28, 0.95);
+      backdrop-filter: blur(30px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 28px;
+      padding: 36px;
+      text-align: center;
+      box-shadow: 0 30px 90px rgba(0, 0, 0, 0.9);
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
     }
-    .flash-overlay.show { opacity: 1; }
+    .permission-card.active { display: flex; }
+    .perm-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, rgba(0, 240, 255, 0.15), rgba(236, 72, 153, 0.15));
+      border: 1px solid rgba(0, 240, 255, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      box-shadow: 0 0 30px rgba(0, 240, 255, 0.25);
+    }
+    .perm-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 24px;
+      font-weight: 800;
+    }
+    .perm-desc {
+      font-size: 14px;
+      color: #94a3b8;
+      line-height: 1.6;
+    }
+    .perm-steps {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 14px 18px;
+      text-align: left;
+      font-size: 12px;
+      color: #cbd5e1;
+      line-height: 1.8;
+      width: 100%;
+    }
+    .perm-steps b { color: var(--cyan); }
 
-    .status-banner {
-      position: absolute;
-      bottom: 20px;
+    /* ── Bottom Floating Dock ────────────────────────────────────────── */
+    .dock-container {
+      position: fixed;
+      bottom: 28px;
       left: 50%;
       transform: translateX(-50%);
-      z-index: 25;
-      background: rgba(7, 10, 22, 0.88);
-      backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.15);
+      z-index: 30;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      width: auto;
+      max-width: 95vw;
+    }
+
+    .toast-pill {
+      background: rgba(7, 10, 24, 0.9);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
       border-radius: 99px;
-      padding: 10px 24px;
+      padding: 8px 22px;
+      font-family: 'JetBrains Mono', monospace;
       font-size: 13px;
-      font-family: ui-monospace, monospace;
-      color: #e5e7eb;
-      white-space: nowrap;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      color: #e2e8f0;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
       display: flex;
       align-items: center;
       gap: 8px;
+      white-space: nowrap;
     }
-    .status-banner b { color: #00f0ff; }
-    .status-banner .badge-inv {
-      background: #ec4899;
+    .toast-pill b { color: var(--cyan); }
+    .toast-pill .tag-inv {
+      background: linear-gradient(135deg, #ec4899, #f43f5e);
       color: #fff;
       padding: 2px 8px;
       border-radius: 6px;
-      font-weight: 700;
+      font-weight: 800;
+      font-size: 11px;
     }
 
-    .controls-bar {
+    .dock-bar {
+      background: var(--glass-bg);
+      backdrop-filter: blur(28px);
+      border: 1px solid var(--glass-border);
+      border-radius: 26px;
+      padding: 10px 14px;
       display: flex;
-      flex-wrap: wrap;
       align-items: center;
-      justify-content: center;
-      gap: 12px;
-      padding: 12px;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 16px;
+      gap: 10px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08);
     }
-    button {
-      padding: 12px 24px;
-      border-radius: 12px;
+
+    button.dock-btn {
+      padding: 12px 22px;
+      border-radius: 18px;
       border: none;
+      font-family: 'Plus Jakarta Sans', sans-serif;
       font-size: 13px;
-      font-family: ui-monospace, monospace;
       font-weight: 700;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       gap: 8px;
       transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      white-space: nowrap;
     }
-    .btn-primary {
-      background: linear-gradient(135deg, #00f0ff, #a855f7);
-      color: #050813;
-      box-shadow: 0 4px 20px rgba(0, 240, 255, 0.3);
+    .btn-cta {
+      background: linear-gradient(135deg, var(--cyan), var(--purple));
+      color: #04060f;
+      box-shadow: 0 4px 20px rgba(0, 240, 255, 0.35);
     }
-    .btn-primary:hover:not(:disabled) {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 26px rgba(0, 240, 255, 0.5);
+    .btn-cta:hover:not(:disabled) {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 8px 30px rgba(0, 240, 255, 0.6);
     }
-    .btn-primary:active:not(:disabled) { transform: translateY(0); }
-    .btn-secondary {
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      color: #f3f4f6;
+    .btn-disappear {
+      background: linear-gradient(135deg, #ec4899, #a855f7);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(236, 72, 153, 0.4);
     }
-    .btn-secondary:hover:not(:disabled) {
-      background: rgba(255, 255, 255, 0.15);
+    .btn-disappear:hover:not(:disabled) {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 8px 30px rgba(236, 72, 153, 0.6);
+    }
+    .btn-ghost {
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #f8fafc;
+    }
+    .btn-ghost:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.14);
       transform: translateY(-1px);
     }
-    .btn-danger {
+    .btn-danger-ghost {
       background: rgba(239, 68, 68, 0.12);
       border: 1px solid rgba(239, 68, 68, 0.3);
       color: #f87171;
     }
-    .btn-danger:hover:not(:disabled) {
+    .btn-danger-ghost:hover:not(:disabled) {
       background: rgba(239, 68, 68, 0.22);
     }
-    button:disabled {
+    button.dock-btn:disabled {
       opacity: 0.35;
       cursor: not-allowed;
       transform: none !important;
       box-shadow: none !important;
     }
 
-    .slider-card {
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      border-radius: 14px;
-      padding: 14px 20px;
+    /* ── Settings Drawer (Slide Up) ──────────────────────────────────── */
+    .settings-popover {
+      position: fixed;
+      bottom: 110px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      z-index: 35;
+      background: var(--glass-bg);
+      backdrop-filter: blur(28px);
+      border: 1px solid var(--glass-border);
+      border-radius: 24px;
+      padding: 20px 24px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      width: 380px;
+      max-width: 90vw;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .settings-popover.open {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(-50%) translateY(0);
+    }
+    .setting-row {
       display: flex;
       align-items: center;
-      gap: 16px;
-      font-size: 12px;
-      font-family: ui-monospace, monospace;
-      color: #9ca3af;
+      justify-content: space-between;
+      gap: 14px;
+      font-size: 13px;
+      font-weight: 600;
     }
-    .slider-card input[type=range] {
+    .setting-row input[type=range] {
       flex: 1;
       height: 6px;
       border-radius: 6px;
-      accent-color: #00f0ff;
+      accent-color: var(--cyan);
       cursor: pointer;
-      background: rgba(255, 255, 255, 0.1);
     }
-    .slider-card .val-box {
-      color: #00f0ff;
-      font-weight: 700;
-      font-size: 14px;
-      width: 40px;
-      text-align: right;
-    }
-
-    .telemetry-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 12px;
-    }
-    .stat-card {
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      border-radius: 14px;
-      padding: 14px 16px;
-      font-family: ui-monospace, monospace;
+    .setting-row select {
+      background: #0e1328;
+      color: var(--cyan);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      border-radius: 8px;
+      padding: 6px 12px;
       font-size: 12px;
-    }
-    .stat-card .label { color: #6b7280; margin-bottom: 6px; }
-    .stat-card .stat-val { color: #f3f4f6; font-weight: 700; font-size: 13px; }
-    .stat-card .stat-val.active { color: #34d399; }
-    .stat-card .stat-val.pink { color: #f472b6; }
-    .stat-card .stat-val.cyan { color: #00f0ff; }
-    .stat-card .stat-val.muted { color: #6b7280; }
-
-    .bars-container {
-      display: flex;
-      align-items: flex-end;
-      gap: 3px;
-      height: 28px;
-    }
-    .audio-bar {
-      flex: 1;
-      border-radius: 2px;
-      background: #1f293d;
-      min-height: 3px;
-      transition: height 0.05s ease-out, background 0.15s;
-    }
-    .audio-bar.active { background: #a855f7; }
-    .audio-bar.clap { background: #00f0ff; box-shadow: 0 0 6px #00f0ff; }
-
-    .workflow-steps {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 12px;
-    }
-    .wf-step {
-      background: rgba(255, 255, 255, 0.02);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      border-radius: 14px;
-      padding: 16px;
-      font-size: 12px;
-      font-family: ui-monospace, monospace;
-    }
-    .wf-step .num {
-      font-size: 20px;
-      font-weight: 900;
-      margin-bottom: 6px;
-      background: linear-gradient(135deg, #00f0ff, #a855f7);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    .wf-step .title { font-weight: 700; color: #f3f4f6; margin-bottom: 4px; font-size: 13px; }
-    .wf-step .desc { color: #6b7280; line-height: 1.5; font-size: 11px; }
-
-    footer {
-      position: relative;
-      z-index: 5;
-      margin-top: auto;
-      padding: 20px;
-      text-align: center;
-      font-size: 11px;
-      font-family: ui-monospace, monospace;
-      color: #4b5563;
-      border-top: 1px solid rgba(255, 255, 255, 0.04);
+      outline: none;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
 
-<header>
-  <div class="brand">
-    <div class="logo-badge">👏</div>
-    <div class="logo-text">ClapCam <span>AI</span></div>
-  </div>
-  <div class="pills">
-    <div class="pill" id="pCam"><div class="dot"></div>Camera Off</div>
-    <div class="pill" id="pMic"><div class="dot"></div>Mic Off</div>
-    <div class="pill" id="pState"><div class="dot"></div>Visible</div>
-  </div>
-</header>
-
-<main>
-
-  <!-- Viewport -->
-  <div class="vp-container" id="vp">
+  <!-- Fullscreen Media Viewport -->
+  <div id="mediaContainer">
     <video id="vid" autoplay playsinline muted></video>
     <canvas id="cv"></canvas>
-    <div class="cam-placeholder" id="ph">
-      <div class="spinner"></div>
-      <p>Initializing camera feed…</p>
+  </div>
+
+  <!-- Flash Effect Layer -->
+  <div id="flashLayer"></div>
+
+  <!-- Top Sci-Fi HUD -->
+  <div class="hud-top">
+    <div class="brand-pill">
+      <div class="brand-icon">👏</div>
+      <div class="brand-name">ClapCam <span>AI</span></div>
     </div>
-    <div class="countdown-overlay" id="cdOverlay">
-      <div class="countdown-number" id="cdNum">3</div>
-      <div class="countdown-text">Step out of camera view!</div>
-    </div>
-    <div class="flash-overlay" id="fl"></div>
-    <div class="status-banner" id="bn">
-      <span><b>Step 1:</b> Waiting for camera…</span>
+
+    <div class="top-telemetry">
+      <div class="hud-chip" id="chipCam"><div class="dot"></div>Camera Off</div>
+      <div class="hud-chip" id="chipAi"><div class="dot"></div>AI Neural Mask</div>
+      
+      <!-- Live Equalizer Visualizer -->
+      <div class="audio-visualizer-pill" id="eqPill" title="Clap Frequency Energy">
+        <div class="eq-stick"></div><div class="eq-stick"></div><div class="eq-stick"></div><div class="eq-stick"></div>
+        <div class="eq-stick"></div><div class="eq-stick"></div><div class="eq-stick"></div><div class="eq-stick"></div>
+        <div class="eq-stick"></div><div class="eq-stick"></div><div class="eq-stick"></div><div class="eq-stick"></div>
+        <div class="eq-stick"></div><div class="eq-stick"></div><div class="eq-stick"></div><div class="eq-stick"></div>
+      </div>
+
+      <div class="hud-chip" id="chipState"><div class="dot"></div>Visible</div>
+
+      <button class="btn-icon" id="btnFullscreen" title="Toggle Fullscreen">⛶</button>
+      <button class="btn-icon" id="btnSettingsToggle" title="Settings">⚙</button>
     </div>
   </div>
 
-  <!-- Main Controls -->
-  <div class="controls-bar">
-    <button class="btn-primary" id="bMic" disabled>🎙 Arm Microphone</button>
-    <button class="btn-secondary" id="bCap" disabled>📸 Capture Background (3s)</button>
-    <button class="btn-secondary" id="bTog" disabled>👻 Disappear</button>
-    <button class="btn-danger" id="bRst">↺ Reset</button>
+  <!-- Center Overlay: Countdown & Permission Helper -->
+  <div class="center-overlay">
+    
+    <!-- 3s Step Out Countdown -->
+    <div class="cd-wrapper" id="cdWrapper">
+      <div class="cd-number" id="cdNumber">3</div>
+      <div class="cd-subtitle">Step out of camera view!</div>
+    </div>
+
+    <!-- Permission Unlock Card -->
+    <div class="permission-card" id="permCard">
+      <div class="perm-icon">📹</div>
+      <h2 class="perm-title">Camera Access Required</h2>
+      <p class="perm-desc">Your browser blocked camera or microphone permissions for localhost.</p>
+      
+      <div class="perm-steps">
+        1. Look at the top address bar next to <b>localhost:3030</b>.<br/>
+        2. Click the <b>Site Settings / Lock 🔒</b> icon.<br/>
+        3. Set <b>Camera</b> and <b>Microphone</b> to <b>Allow</b>.<br/>
+        4. Click the button below to retry.
+      </div>
+
+      <button class="dock-btn btn-cta" id="btnRetryPerm" style="width: 100%; justify-content: center; padding: 14px;">
+        🔄 Retry Camera &amp; Mic Access
+      </button>
+    </div>
+
   </div>
 
-  <!-- Clap Sensitivity -->
-  <div class="slider-card">
-    <span>Clap Trigger Sensitivity</span>
-    <input type="range" id="sSlider" min="30" max="180" value="85" />
-    <span class="val-box" id="sVal">85</span>
-    <span style="color:#6b7280; font-size:11px;">(Lower = triggers with lighter clap)</span>
-  </div>
-
-  <!-- Telemetry Dashboard -->
-  <div class="telemetry-grid">
-    <div class="stat-card">
-      <div class="label">📷 Video Stream</div>
-      <div class="stat-val muted" id="cCam">Off</div>
+  <!-- Settings Popover -->
+  <div class="settings-popover" id="settingsPopover">
+    <div class="setting-row">
+      <span>Clap Sensitivity:</span>
+      <input type="range" id="sensRange" min="25" max="150" value="65" />
+      <span id="sensText" style="color: var(--cyan); font-family: monospace;">65</span>
     </div>
-    <div class="stat-card">
-      <div class="label">🎙 Mic Status</div>
-      <div class="stat-val muted" id="cMic">Off</div>
+    <div class="setting-row">
+      <span>Effect Mode:</span>
+      <select id="modeSelect">
+        <option value="cloak">👻 Invisibility Cloak</option>
+        <option value="stealth">🌌 Cyber Hologram</option>
+        <option value="blur">🌫 Background Blur</option>
+      </select>
     </div>
-    <div class="stat-card">
-      <div class="label">🖼 Background Plate</div>
-      <div class="stat-val muted" id="cBg">None captured</div>
-    </div>
-    <div class="stat-card">
-      <div class="label">👁 Visibility State</div>
-      <div class="stat-val muted" id="cSt">Visible</div>
-    </div>
-    <div class="stat-card" style="grid-column: span 2;">
-      <div class="label">⚡ 2–4 kHz Clap Frequency Energy</div>
-      <div class="bars-container" id="barsEl"></div>
-    </div>
-    <div class="stat-card" style="grid-column: span 2;">
-      <div class="label">🔊 Last Clap Detection</div>
-      <div class="stat-val muted" id="cClap">None yet — arm mic &amp; clap!</div>
-    </div>
-  </div>
-
-  <!-- Quick Workflow Steps -->
-  <div class="workflow-steps">
-    <div class="wf-step">
-      <div class="num">01</div>
-      <div class="title">Camera Auto-Starts</div>
-      <div class="desc">Webcam feed initializes automatically upon loading.</div>
-    </div>
-    <div class="wf-step">
-      <div class="num">02</div>
-      <div class="title">Arm Microphone</div>
-      <div class="desc">Click "Arm Microphone" to activate 2–4 kHz clap listening.</div>
-    </div>
-    <div class="wf-step">
-      <div class="num">03</div>
-      <div class="title">Capture Empty Scene</div>
-      <div class="desc">Step out of view or click capture to save background plate.</div>
-    </div>
-    <div class="wf-step">
-      <div class="num">04</div>
-      <div class="title">Clap to Disappear!</div>
-      <div class="desc">Clap once to vanish instantly. Clap again to reappear.</div>
+    <div class="setting-row">
+      <span>AI Mask Outline:</span>
+      <button class="dock-btn btn-ghost" id="btnDebugMask" style="padding: 6px 14px; font-size: 11px;">Toggle Mask</button>
     </div>
   </div>
 
-</main>
+  <!-- Bottom Floating Dock -->
+  <div class="dock-container">
+    <div class="toast-pill" id="toastPill">
+      <span><b>Ready:</b> Click Start Studio to begin</span>
+    </div>
 
-<footer>ClapCam AI &bull; Web Audio API + HTML5 Canvas &bull; 100% Client-Side Processing</footer>
+    <div class="dock-bar">
+      <button class="dock-btn btn-cta" id="btnLaunch">⚡ Start Studio</button>
+      <button class="dock-btn btn-ghost" id="btnCapture" disabled>📸 Capture Background (3s)</button>
+      <button class="dock-btn btn-disappear" id="btnDisappear" disabled>👻 Disappear (Clap / Space)</button>
+      <button class="dock-btn btn-ghost" id="btnMicToggle" disabled>🎙 Arm Mic</button>
+      <button class="dock-btn btn-danger-ghost" id="btnReset">↺ Reset</button>
+    </div>
+  </div>
 
 <script>
-// ── Application State ────────────────────────────────────────────────────────
+// ── State ──────────────────────────────────────────────────────────────────────
 const S = {
-  camOk: false,
-  micOk: false,
+  cameraActive: false,
+  micActive: false,
+  aiActive: false,
   bgCaptured: false,
   invisible: false,
-  lastClapTime: 0,
-  threshold: 85,
-  cooldownMs: 650,
+  showDebug: false,
+  effectMode: 'cloak',
+  threshold: 65,
+  cooldownMs: 600,
+  lastClap: 0,
   consecutiveFrames: 2,
-  consecCounter: 0,
-  countdownRunning: false
+  consecCount: 0,
+  isCountingDown: false
 };
 
-// ── DOM References ────────────────────────────────────────────────────────────
-const vid       = document.getElementById('vid');
-const cv        = document.getElementById('cv');
-const ctx       = cv.getContext('2d', { willReadFrequently: true });
-const ph        = document.getElementById('ph');
-const fl        = document.getElementById('fl');
-const bn        = document.getElementById('bn');
-const vp        = document.getElementById('vp');
-const bMic      = document.getElementById('bMic');
-const bCap      = document.getElementById('bCap');
-const bTog      = document.getElementById('bTog');
-const bRst      = document.getElementById('bRst');
-const pCam      = document.getElementById('pCam');
-const pMic      = document.getElementById('pMic');
-const pSt       = document.getElementById('pState');
-const cCam      = document.getElementById('cCam');
-const cMic      = document.getElementById('cMic');
-const cBg       = document.getElementById('cBg');
-const cSt       = document.getElementById('cSt');
-const cClap     = document.getElementById('cClap');
-const sSlider   = document.getElementById('sSlider');
-const sVal      = document.getElementById('sVal');
-const barsEl    = document.getElementById('barsEl');
-const cdOverlay = document.getElementById('cdOverlay');
-const cdNum     = document.getElementById('cdNum');
+// ── DOM References ─────────────────────────────────────────────────────────────
+const vid          = document.getElementById('vid');
+const cv           = document.getElementById('cv');
+const ctx          = cv.getContext('2d', { willReadFrequently: true });
+const mediaBox     = document.getElementById('mediaContainer');
+const flashLayer   = document.getElementById('flashLayer');
+const cdWrapper    = document.getElementById('cdWrapper');
+const cdNumber     = document.getElementById('cdNumber');
+const permCard     = document.getElementById('permCard');
+const toastPill    = document.getElementById('toastPill');
+const settingsPop  = document.getElementById('settingsPopover');
 
-// ── Build Audio Frequency Bars ────────────────────────────────────────────────
-const NBARS = 28;
-const bars = Array.from({ length: NBARS }, () => {
-  const b = document.createElement('div');
-  b.className = 'audio-bar';
-  barsEl.appendChild(b);
-  return b;
-});
+// Badges & Buttons
+const chipCam      = document.getElementById('chipCam');
+const chipAi       = document.getElementById('chipAi');
+const chipState    = document.getElementById('chipState');
+const btnLaunch    = document.getElementById('btnLaunch');
+const btnCapture   = document.getElementById('btnCapture');
+const btnDisappear = document.getElementById('btnDisappear');
+const btnMicToggle = document.getElementById('btnMicToggle');
+const btnReset     = document.getElementById('btnReset');
+const btnFullscreen= document.getElementById('btnFullscreen');
+const btnSettingsToggle = document.getElementById('btnSettingsToggle');
+const btnDebugMask = document.getElementById('btnDebugMask');
+const btnRetryPerm = document.getElementById('btnRetryPerm');
+const sensRange    = document.getElementById('sensRange');
+const sensText     = document.getElementById('sensText');
+const modeSelect   = document.getElementById('modeSelect');
+const eqSticks     = Array.from(document.querySelectorAll('.eq-stick'));
 
-// ── Background Storage ────────────────────────────────────────────────────────
-let bgImageData = null;
+// ── Offscreen Memory Canvases ──────────────────────────────────────────────────
+const bgCanvas = document.createElement('canvas');
+const bgCtx = bgCanvas.getContext('2d', { willReadFrequently: true });
 
-// ── Synthesized Sound FX ──────────────────────────────────────────────────────
-function playChime(freq = 880, duration = 0.12, type = 'sine') {
+const maskCanvas = document.createElement('canvas');
+const maskCtx = maskCanvas.getContext('2d', { willReadFrequently: true });
+
+// ── Synthesized Chime Sounds ───────────────────────────────────────────────────
+function playChime(freq = 880, dur = 0.12, type = 'sine') {
   try {
     const actx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
     const osc = actx.createOscillator();
@@ -562,317 +647,499 @@ function playChime(freq = 880, duration = 0.12, type = 'sine') {
     osc.type = type;
     osc.frequency.setValueAtTime(freq, actx.currentTime);
     gain.gain.setValueAtTime(0.2, actx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + duration);
+    gain.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + dur);
     osc.connect(gain);
     gain.connect(actx.destination);
     osc.start();
-    osc.stop(actx.currentTime + duration);
+    osc.stop(actx.currentTime + dur);
   } catch(e) {}
 }
 
-// ── 1. Camera Initialization ──────────────────────────────────────────────────
-async function initCamera() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
-      audio: false
-    });
-    vid.srcObject = stream;
-    await new Promise(res => vid.addEventListener('loadedmetadata', res, { once: true }));
-    cv.width  = vid.videoWidth;
-    cv.height = vid.videoHeight;
-    ph.style.display = 'none';
-    S.camOk = true;
+// ── 1. Camera Initialization with Multi-Tier Fallback ──────────────────────────
+let cameraStream = null;
 
-    setPill(pCam, 'Camera Live', 'on');
-    setStat(cCam, `${vid.videoWidth} × ${vid.videoHeight} Live`, 'active');
-    bMic.disabled = false;
-    bCap.disabled = false;
-    updateBanner();
+async function startCamera() {
+  permCard.classList.remove('active');
+  try {
+    // Attempt standard HD camera stream
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 1920, min: 640 }, height: { ideal: 1080, min: 480 }, facingMode: 'user' },
+        audio: false
+      });
+    } catch(err1) {
+      // Fallback: simple constraint
+      stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    }
+
+    cameraStream = stream;
+    vid.srcObject = stream;
+    await vid.play();
+
+    resizeCanvasToScreen();
+    window.addEventListener('resize', resizeCanvasToScreen);
+
+    S.cameraActive = true;
+    chipCam.className = 'hud-chip live';
+    chipCam.innerHTML = '<div class="dot"></div>Camera Live';
+
+    btnLaunch.innerHTML = '🛑 Stop';
+    btnLaunch.className = 'dock-btn btn-ghost';
+    btnCapture.disabled = false;
+    btnMicToggle.disabled = false;
+    btnDisappear.disabled = !S.bgCaptured;
+
+    updateToast();
     requestAnimationFrame(renderLoop);
+    return true;
   } catch(err) {
-    ph.innerHTML = `<p style="color:#ef4444; text-align:center;">Camera access denied or unavailable.<br/><span style="font-size:12px; color:#9ca3af;">Please allow camera permissions and refresh.</span></p>`;
+    console.error('Camera access failed:', err);
+    permCard.classList.add('active');
+    return false;
   }
 }
 
-// ── 2. Canvas Render Loop ─────────────────────────────────────────────────────
-function renderLoop() {
-  if (!S.camOk) return;
+function stopCamera() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(t => t.stop());
+    cameraStream = null;
+  }
+  S.cameraActive = false;
+  chipCam.className = 'hud-chip';
+  chipCam.innerHTML = '<div class="dot"></div>Camera Off';
 
-  if (S.invisible && bgImageData) {
-    // Both <video> and <canvas> have CSS transform: scaleX(-1).
-    // Drawing bgImageData raw onto canvas preserves exact alignment with video!
-    if (cv.width !== bgImageData.width)   cv.width  = bgImageData.width;
-    if (cv.height !== bgImageData.height) cv.height = bgImageData.height;
-    ctx.putImageData(bgImageData, 0, 0);
-    cv.style.opacity = '1';
-  } else {
-    cv.style.opacity = '0';
+  btnLaunch.innerHTML = '⚡ Start Studio';
+  btnLaunch.className = 'dock-btn btn-cta';
+  btnCapture.disabled = true;
+  btnDisappear.disabled = true;
+  btnMicToggle.disabled = true;
+
+  updateToast();
+}
+
+function resizeCanvasToScreen() {
+  cv.width = window.innerWidth;
+  cv.height = window.innerHeight;
+}
+
+// ── 2. MediaPipe Neural Segmentation ──────────────────────────────────────────
+let selfieSegmentation = null;
+let lastMask = null;
+let isInferencing = false;
+
+function initMediaPipe() {
+  try {
+    if (window.SelfieSegmentation) {
+      selfieSegmentation = new SelfieSegmentation({
+        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`
+      });
+
+      selfieSegmentation.setOptions({
+        modelSelection: 1, // 1 = Landscape / Ultra-Fast
+        selfieMode: false
+      });
+
+      selfieSegmentation.onResults((results) => {
+        lastMask = results.segmentationMask;
+        isInferencing = false;
+      });
+
+      S.aiActive = true;
+      chipAi.className = 'hud-chip live';
+      chipAi.innerHTML = '<div class="dot"></div>AI Neural Ready';
+    }
+  } catch(e) {
+    console.warn('MediaPipe fallback:', e);
+  }
+}
+
+// ── 3. High-Speed Fullscreen Render Loop ───────────────────────────────────────
+function renderLoop() {
+  if (!S.cameraActive) return;
+
+  const w = cv.width;
+  const h = cv.height;
+
+  if (maskCanvas.width !== w || maskCanvas.height !== h) {
+    maskCanvas.width = w;
+    maskCanvas.height = h;
   }
 
+  // Send frame to AI neural network
+  if (selfieSegmentation && !isInferencing && vid.readyState >= 2) {
+    isInferencing = true;
+    selfieSegmentation.send({ image: vid }).catch(() => { isInferencing = false; });
+  }
+
+  ctx.save();
+  ctx.clearRect(0, 0, w, h);
+
+  // 1. Draw live video feed (scaled to fullscreen cover)
+  drawVideoCover(ctx, vid, w, h);
+
+  // 2. If INVISIBLE MODE is active:
+  if (S.invisible) {
+    if (S.effectMode === 'cloak' && S.bgCaptured) {
+      // ── Clean Plate Invisibility Masking ──────────────────────────────
+      if (lastMask) {
+        maskCtx.save();
+        maskCtx.clearRect(0, 0, w, h);
+        drawVideoCover(maskCtx, lastMask, w, h);
+        maskCtx.globalCompositeOperation = 'source-in';
+        drawVideoCover(maskCtx, bgCanvas, w, h);
+        maskCtx.restore();
+
+        // Draw clean background ONLY over the person's silhouette
+        ctx.drawImage(maskCanvas, 0, 0, w, h);
+      } else {
+        // Fallback: draw full background plate
+        drawVideoCover(ctx, bgCanvas, w, h);
+      }
+
+    } else if (S.effectMode === 'stealth') {
+      // ── Cyber Hologram Mask ───────────────────────────────────────────
+      if (lastMask) {
+        maskCtx.save();
+        maskCtx.clearRect(0, 0, w, h);
+        drawVideoCover(maskCtx, lastMask, w, h);
+        maskCtx.globalCompositeOperation = 'source-in';
+
+        const grad = maskCtx.createLinearGradient(0, 0, w, h);
+        grad.addColorStop(0, 'rgba(0, 240, 255, 0.45)');
+        grad.addColorStop(0.5, 'rgba(139, 92, 246, 0.45)');
+        grad.addColorStop(1, 'rgba(236, 72, 153, 0.45)');
+        maskCtx.fillStyle = grad;
+        maskCtx.fillRect(0, 0, w, h);
+        maskCtx.restore();
+
+        ctx.drawImage(maskCanvas, 0, 0, w, h);
+      }
+
+    } else if (S.effectMode === 'blur') {
+      // ── Background Blur ───────────────────────────────────────────────
+      if (lastMask) {
+        maskCtx.save();
+        maskCtx.clearRect(0, 0, w, h);
+        drawVideoCover(maskCtx, lastMask, w, h);
+        maskCtx.globalCompositeOperation = 'source-out';
+        maskCtx.filter = 'blur(18px)';
+        drawVideoCover(maskCtx, vid, w, h);
+        maskCtx.restore();
+
+        ctx.drawImage(maskCanvas, 0, 0, w, h);
+      }
+    }
+  }
+
+  // 3. Debug Silhouette Mask
+  if (S.showDebug && lastMask) {
+    ctx.save();
+    ctx.globalAlpha = 0.4;
+    drawVideoCover(ctx, lastMask, w, h);
+    ctx.restore();
+  }
+
+  ctx.restore();
   requestAnimationFrame(renderLoop);
 }
 
-// ── 3. Background Capture with 3s Countdown ───────────────────────────────────
-function startCaptureCountdown() {
-  if (!S.camOk || S.countdownRunning) return;
-  S.countdownRunning = true;
-  cdOverlay.classList.add('active');
+// Utility: Draw video or canvas source with object-fit: cover scaling
+function drawVideoCover(targetCtx, source, targetW, targetH) {
+  const srcW = source.videoWidth || source.width || targetW;
+  const srcH = source.videoHeight || source.height || targetH;
+  if (!srcW || !srcH) return;
+
+  const srcRatio = srcW / srcH;
+  const targetRatio = targetW / targetH;
+
+  let drawW, drawH, drawX, drawY;
+  if (targetRatio > srcRatio) {
+    drawW = targetW;
+    drawH = targetW / srcRatio;
+    drawX = 0;
+    drawY = (targetH - drawH) / 2;
+  } else {
+    drawH = targetH;
+    drawW = targetH * srcRatio;
+    drawX = (targetW - drawW) / 2;
+    drawY = 0;
+  }
+
+  targetCtx.drawImage(source, drawX, drawY, drawW, drawH);
+}
+
+// ── 4. Background Capture with 3s Step-Out Countdown ───────────────────────────
+function startCountdownCapture() {
+  if (!S.cameraActive || S.isCountingDown) return;
+  S.isCountingDown = true;
+  cdWrapper.classList.add('active');
 
   let count = 3;
-  cdNum.textContent = count;
+  cdNumber.textContent = count;
   playChime(600, 0.1);
 
   const timer = setInterval(() => {
     count--;
     if (count > 0) {
-      cdNum.textContent = count;
+      cdNumber.textContent = count;
       playChime(600, 0.1);
     } else {
       clearInterval(timer);
-      cdOverlay.classList.remove('active');
-      S.countdownRunning = false;
-      captureBackground();
-      playChime(1200, 0.25, 'triangle');
+      cdWrapper.classList.remove('active');
+      S.isCountingDown = false;
+      captureBackgroundPlate();
+      playChime(1200, 0.3, 'triangle');
     }
   }, 1000);
 }
 
-function captureBackground() {
-  if (!S.camOk || vid.readyState < 2) return;
-  const w = vid.videoWidth;
-  const h = vid.videoHeight;
+function captureBackgroundPlate() {
+  if (!S.cameraActive || vid.readyState < 2) return;
+  const w = cv.width;
+  const h = cv.height;
 
-  // Offscreen canvas to capture pure video pixels
-  const offscreen = document.createElement('canvas');
-  offscreen.width = w;
-  offscreen.height = h;
-  const offCtx = offscreen.getContext('2d');
-  offCtx.drawImage(vid, 0, 0, w, h);
-  bgImageData = offCtx.getImageData(0, 0, w, h);
+  bgCanvas.width = w;
+  bgCanvas.height = h;
+  drawVideoCover(bgCtx, vid, w, h);
 
-  cv.width = w;
-  cv.height = h;
   S.bgCaptured = true;
+  btnDisappear.disabled = false;
 
-  setStat(cBg, `${w} × ${h} Plate Captured ✓`, 'active');
-  bTog.disabled = false;
-  flashScreen('rgba(52, 211, 153, 0.35)');
-  updateBanner();
+  triggerFlash('rgba(16, 185, 129, 0.4)');
+  updateToast();
 }
 
-// ── 4. Toggle Invisibility ────────────────────────────────────────────────────
+// ── 5. Invisibility Toggle ────────────────────────────────────────────────────
 function toggleInvisibility() {
-  if (!S.bgCaptured) {
-    startCaptureCountdown();
+  if (!S.bgCaptured && S.effectMode === 'cloak') {
+    startCountdownCapture();
     return;
   }
+
   S.invisible = !S.invisible;
 
   if (S.invisible) {
-    vp.className = 'vp-container glow-invisible';
-    setPill(pSt, '👻 INVISIBLE', 'inv');
-    setStat(cSt, 'Invisible 👻 (Background Plate Active)', 'pink');
-    bTog.innerHTML = '👁 Reappear';
-    flashScreen('rgba(236, 72, 153, 0.4)');
-    playChime(1040, 0.2, 'sine');
+    mediaBox.className = 'glow-invisible';
+    chipState.className = 'hud-chip inv';
+    chipState.innerHTML = '<div class="dot"></div>👻 INVISIBLE';
+    btnDisappear.innerHTML = '👁 Reappear';
+    triggerFlash('rgba(236, 72, 153, 0.5)');
+    playChime(1080, 0.22, 'sine');
   } else {
-    vp.className = 'vp-container';
-    setPill(pSt, 'Visible', 'on');
-    setStat(cSt, 'Visible 👁', 'active');
-    bTog.innerHTML = '👻 Disappear';
-    flashScreen('rgba(0, 240, 255, 0.35)');
-    playChime(780, 0.2, 'sine');
+    mediaBox.className = '';
+    chipState.className = 'hud-chip live';
+    chipState.innerHTML = '<div class="dot"></div>Visible';
+    btnDisappear.innerHTML = '👻 Disappear (Clap / Space)';
+    triggerFlash('rgba(0, 240, 255, 0.4)');
+    playChime(760, 0.22, 'sine');
   }
-  updateBanner();
-}
 
-// ── 5. Clap Detection Trigger ─────────────────────────────────────────────────
-function onClapDetected(energy) {
-  S.lastClapTime = Date.now();
-  setStat(cClap, `Energy ${Math.round(energy)} @ ${new Date().toLocaleTimeString()}`, 'cyan');
-
-  // Pulse flash
-  flashScreen('rgba(0, 240, 255, 0.45)');
-  vp.classList.add('glow-clap');
-  setTimeout(() => vp.classList.remove('glow-clap'), 300);
-
-  if (!S.bgCaptured) {
-    // If background not captured yet, capture it now!
-    captureBackground();
-  } else {
-    // Toggle invisibility state
-    toggleInvisibility();
-  }
+  updateToast();
 }
 
 // ── 6. Audio Engine & Clap Detection ──────────────────────────────────────────
 let audioCtx = null;
-let analyser = null;
+let audioAnalyser = null;
 let micStream = null;
-let freqData = null;
-let audioRafId = null;
+let freqBuffer = null;
+let audioRaf = null;
 
-async function startMicrophone() {
+async function startMic() {
   try {
-    micStream = await navigator.mediaDevices.getUserMedia({
-      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
-      video: false
-    });
-
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if (audioCtx.state === 'suspended') {
-      await audioCtx.resume();
-    }
+    if (audioCtx.state === 'suspended') await audioCtx.resume();
 
-    analyser = audioCtx.createAnalyser();
-    analyser.fftSize = 2048;
-    analyser.smoothingTimeConstant = 0.2;
+    audioAnalyser = audioCtx.createAnalyser();
+    audioAnalyser.fftSize = 1024;
+    audioAnalyser.smoothingTimeConstant = 0.2;
 
     const source = audioCtx.createMediaStreamSource(micStream);
-    source.connect(analyser);
+    source.connect(audioAnalyser);
 
-    freqData = new Uint8Array(analyser.frequencyBinCount);
-    S.micOk = true;
+    freqBuffer = new Uint8Array(audioAnalyser.frequencyBinCount);
+    S.micActive = true;
 
-    setPill(pMic, '🎙 Mic Armed', 'on');
-    setStat(cMic, 'Active (2–4 kHz Gate)', 'active');
-    bMic.innerHTML = '🔇 Disarm Mic';
-    bMic.className = 'btn-secondary';
-    updateBanner();
-    processAudioLoop();
+    btnMicToggle.innerHTML = '🔇 Disarm Mic';
+    btnMicToggle.className = 'dock-btn btn-ghost';
+    updateToast();
+    audioLoop();
+    return true;
   } catch(err) {
-    alert('Microphone access was denied. Please allow microphone permissions.');
+    console.error('Microphone error:', err);
+    alert('Microphone permission blocked. Please enable microphone permissions in your URL bar.');
+    return false;
   }
 }
 
-function stopMicrophone() {
-  if (audioRafId) cancelAnimationFrame(audioRafId);
-  if (micStream) micStream.getTracks().forEach(t => t.stop());
-  if (audioCtx) audioCtx.close();
-
-  S.micOk = false;
-  setPill(pMic, 'Mic Off', '');
-  setStat(cMic, 'Off', 'muted');
-  bMic.innerHTML = '🎙 Arm Microphone';
-  bMic.className = 'btn-primary';
-
-  bars.forEach(b => {
-    b.style.height = '3px';
-    b.className = 'audio-bar';
-  });
-  updateBanner();
+function stopMic() {
+  if (audioRaf) cancelAnimationFrame(audioRaf);
+  if (micStream) {
+    micStream.getTracks().forEach(t => t.stop());
+    micStream = null;
+  }
+  if (audioCtx) {
+    audioCtx.close();
+    audioCtx = null;
+  }
+  S.micActive = false;
+  btnMicToggle.innerHTML = '🎙 Arm Mic';
+  eqSticks.forEach(s => { s.style.height = '4px'; s.className = 'eq-stick'; });
+  updateToast();
 }
 
-function processAudioLoop() {
-  if (!S.micOk || !analyser) return;
-  analyser.getByteFrequencyData(freqData);
+function audioLoop() {
+  if (!S.micActive || !audioAnalyser) return;
+  audioAnalyser.getByteFrequencyData(freqBuffer);
 
-  // Focus band: 2000 Hz to 4000 Hz (characteristic frequency spectrum of human claps)
+  // 2–4 kHz human clap frequency band
   const sampleRate = audioCtx.sampleRate;
-  const binCount   = analyser.frequencyBinCount;
+  const binCount   = audioAnalyser.frequencyBinCount;
   const binWidth   = sampleRate / (binCount * 2);
-  const lowBin     = Math.floor(2000 / binWidth);
-  const highBin    = Math.min(Math.ceil(4000 / binWidth), binCount - 1);
+  const loBin      = Math.floor(2000 / binWidth);
+  const hiBin      = Math.min(Math.ceil(4000 / binWidth), binCount - 1);
 
-  let bandSum = 0;
-  let bandCount = 0;
-  for (let i = lowBin; i <= highBin; i++) {
-    bandSum += freqData[i];
+  let bandSum = 0, bandCount = 0;
+  for (let i = loBin; i <= hiBin; i++) {
+    bandSum += freqBuffer[i];
     bandCount++;
   }
   const energy = bandCount > 0 ? bandSum / bandCount : 0;
 
-  // Visualizer Bars
-  const step = Math.floor(binCount / NBARS);
-  const isClapSpike = energy > S.threshold;
-  for (let i = 0; i < NBARS; i++) {
-    const rawVal = freqData[i * step] || 0;
-    const barHeight = Math.max(3, (rawVal / 255) * 28);
-    bars[i].style.height = `${barHeight}px`;
-    bars[i].className = 'audio-bar' + (isClapSpike ? ' clap' : ' active');
+  // Equalizer visualizer
+  const step = Math.floor(binCount / eqSticks.length);
+  const isSpike = energy > S.threshold;
+  for (let i = 0; i < eqSticks.length; i++) {
+    const raw = freqBuffer[i * step] || 0;
+    const h = Math.max(4, (raw / 255) * 26);
+    eqSticks[i].style.height = `${h}px`;
+    eqSticks[i].className = 'eq-stick' + (isSpike ? ' clap' : ' active');
   }
 
-  // Clap Trigger Logic
+  // Trigger Gate
   const now = Date.now();
   if (energy > S.threshold) {
-    S.consecCounter++;
-    if (S.consecCounter >= S.consecutiveFrames && now - S.lastClapTime > S.cooldownMs) {
-      S.consecCounter = 0;
-      onClapDetected(energy);
+    S.consecCount++;
+    if (S.consecCount >= S.consecutiveFrames && now - S.lastClap > S.cooldownMs) {
+      S.consecCount = 0;
+      onClapTrigger();
     }
   } else {
-    S.consecCounter = 0;
+    S.consecCount = 0;
   }
 
-  audioRafId = requestAnimationFrame(processAudioLoop);
+  audioRaf = requestAnimationFrame(audioLoop);
 }
 
-// ── UI Helper Utilities ───────────────────────────────────────────────────────
-function flashScreen(rgbaColor) {
-  fl.style.background = rgbaColor;
-  fl.classList.add('show');
-  setTimeout(() => fl.classList.remove('show'), 160);
-}
+function onClapTrigger() {
+  S.lastClap = Date.now();
+  triggerFlash('rgba(0, 240, 255, 0.55)');
+  mediaBox.classList.add('glow-clap');
+  setTimeout(() => mediaBox.classList.remove('glow-clap'), 300);
 
-function setPill(el, text, stateClass) {
-  el.innerHTML = `<div class="dot"></div>${text}`;
-  el.className = 'pill' + (stateClass ? ` ${stateClass}` : '');
-}
-
-function setStat(el, text, stateClass) {
-  el.textContent = text;
-  el.className = `stat-val ${stateClass}`;
-}
-
-function updateBanner() {
-  if (!S.camOk) {
-    bn.innerHTML = '<span><b>Step 1:</b> Waiting for camera permission…</span>';
-  } else if (!S.micOk) {
-    bn.innerHTML = '<span><b>Step 2:</b> Click <b>"Arm Microphone"</b> to enable clap trigger</span>';
-  } else if (!S.bgCaptured) {
-    bn.innerHTML = '<span><b>Step 3:</b> Step out of view → 👏 <b>Clap</b> (or click Capture)</span>';
-  } else if (!S.invisible) {
-    bn.innerHTML = '<span><b>Ready!</b> 👏 <b>Clap</b> to disappear!</span>';
+  if (!S.bgCaptured && S.effectMode === 'cloak') {
+    captureBackgroundPlate();
   } else {
-    bn.innerHTML = '<span class="badge-inv">INVISIBLE</span> <span>You are invisible — 👏 <b>Clap</b> to reappear</span>';
+    toggleInvisibility();
   }
 }
 
-function resetAll() {
-  stopMicrophone();
+// ── UI Helpers ─────────────────────────────────────────────────────────────────
+function triggerFlash(colorRgba) {
+  flashLayer.style.background = colorRgba;
+  flashLayer.classList.add('show');
+  setTimeout(() => flashLayer.classList.remove('show'), 160);
+}
+
+function updateToast() {
+  if (!S.cameraActive) {
+    toastPill.innerHTML = '<span><b>Step 1:</b> Click <b>"Start Studio"</b></span>';
+  } else if (!S.micActive) {
+    toastPill.innerHTML = '<span><b>Step 2:</b> Click <b>"Arm Mic"</b> (or press Space)</span>';
+  } else if (!S.bgCaptured && S.effectMode === 'cloak') {
+    toastPill.innerHTML = '<span><b>Step 3:</b> Click <b>"Capture Background"</b> &amp; step out</span>';
+  } else if (!S.invisible) {
+    toastPill.innerHTML = '<span><b>Ready!</b> 👏 <b>Clap</b> (or press Space) to vanish!</span>';
+  } else {
+    toastPill.innerHTML = '<span class="tag-inv">INVISIBLE</span> <span>AI Person Mask Active — 👏 <b>Clap</b> to reappear</span>';
+  }
+}
+
+function resetStudio() {
+  stopMic();
   S.bgCaptured = false;
   S.invisible = false;
-  bgImageData = null;
-  cv.style.opacity = '0';
-  vp.className = 'vp-container';
-
-  setPill(pSt, 'Visible', '');
-  setStat(cBg, 'None captured', 'muted');
-  setStat(cSt, 'Visible', 'muted');
-  setStat(cClap, 'None yet — arm mic & clap!', 'muted');
-
-  bTog.disabled = true;
-  bTog.innerHTML = '👻 Disappear';
-  bMic.disabled = !S.camOk;
-  updateBanner();
+  mediaBox.className = '';
+  chipState.className = 'hud-chip';
+  chipState.innerHTML = '<div class="dot"></div>Visible';
+  btnDisappear.disabled = true;
+  btnDisappear.innerHTML = '👻 Disappear (Clap / Space)';
+  updateToast();
 }
 
-// ── Event Listeners ───────────────────────────────────────────────────────────
-bMic.addEventListener('click', () => S.micOk ? stopMicrophone() : startMicrophone());
-bCap.addEventListener('click', startCaptureCountdown);
-bTog.addEventListener('click', toggleInvisibility);
-bRst.addEventListener('click', resetAll);
-
-sSlider.addEventListener('input', (e) => {
-  S.threshold = parseInt(e.target.value, 10);
-  sVal.textContent = S.threshold;
+// ── Event Handlers ─────────────────────────────────────────────────────────────
+btnLaunch.addEventListener('click', async () => {
+  if (S.cameraActive) {
+    stopCamera();
+    stopMic();
+  } else {
+    const ok = await startCamera();
+    if (ok) await startMic();
+  }
 });
 
-// Auto-start camera when page loads
+btnRetryPerm.addEventListener('click', async () => {
+  permCard.classList.remove('active');
+  const ok = await startCamera();
+  if (ok) await startMic();
+});
+
+btnMicToggle.addEventListener('click', () => S.micActive ? stopMic() : startMic());
+btnCapture.addEventListener('click', startCountdownCapture);
+btnDisappear.addEventListener('click', toggleInvisibility);
+btnReset.addEventListener('click', resetStudio);
+
+btnSettingsToggle.addEventListener('click', () => {
+  settingsPop.classList.toggle('open');
+});
+
+btnDebugMask.addEventListener('click', () => {
+  S.showDebug = !S.showDebug;
+  btnDebugMask.style.color = S.showDebug ? 'var(--cyan)' : '';
+});
+
+btnFullscreen.addEventListener('click', () => {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  } else {
+    document.exitFullscreen().catch(() => {});
+  }
+});
+
+sensRange.addEventListener('input', (e) => {
+  S.threshold = parseInt(e.target.value, 10);
+  sensText.textContent = S.threshold;
+});
+
+modeSelect.addEventListener('change', (e) => {
+  S.effectMode = e.target.value;
+  btnDisappear.disabled = !S.cameraActive;
+  updateToast();
+});
+
+// Spacebar Hotkey to Trigger Invisibility
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'Space' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'SELECT') {
+    e.preventDefault();
+    if (S.cameraActive) onClapTrigger();
+  }
+});
+
+// Auto-initialize MediaPipe on page load
 window.addEventListener('load', () => {
-  updateBanner();
-  initCamera();
+  initMediaPipe();
+  updateToast();
 });
 </script>
 </body>
