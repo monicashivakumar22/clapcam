@@ -19,9 +19,11 @@ export class ClapDetector {
   private animationId: number | null = null;
   private config: ClapConfig;
   private callback: ClapCallback | null = null;
+  private onAudioData: ((bars: number[]) => void) | null = null;
   private lastClapTime = 0;
   private consecutiveCount = 0;
   private running = false;
+  private framesSinceAudioUpdate = 0;
 
   constructor(config?: Partial<ClapConfig>) {
     this.config = { ...DEFAULT_CLAP_CONFIG, ...config };
@@ -30,8 +32,13 @@ export class ClapDetector {
   /**
    * Start listening for claps from the given microphone stream.
    */
-  async start(stream: MediaStream, callback: ClapCallback): Promise<void> {
+  async start(
+    stream: MediaStream,
+    callback: ClapCallback,
+    onAudioData?: (bars: number[]) => void,
+  ): Promise<void> {
     this.callback = callback;
+    this.onAudioData = onAudioData ?? null;
 
     this.audioContext = new AudioContext();
     this.analyser = this.audioContext.createAnalyser();
@@ -71,7 +78,9 @@ export class ClapDetector {
     this.analyser = null;
     this.frequencyData = null;
     this.callback = null;
+    this.onAudioData = null;
     this.consecutiveCount = 0;
+    this.framesSinceAudioUpdate = 0;
   }
 
   /**
@@ -118,6 +127,19 @@ export class ClapDetector {
       }
     } else {
       this.consecutiveCount = 0;
+    }
+
+    // Throttle audio bar updates to every ~3 frames (~100ms at 30fps)
+    this.framesSinceAudioUpdate++;
+    if (this.onAudioData && this.framesSinceAudioUpdate >= 3) {
+      this.framesSinceAudioUpdate = 0;
+      const binCount = this.analyser.frequencyBinCount;
+      const step = Math.floor(binCount / 16);
+      const bars: number[] = [];
+      for (let i = 0; i < 16; i++) {
+        bars.push(this.frequencyData[i * step] ?? 0);
+      }
+      this.onAudioData(bars);
     }
 
     this.animationId = requestAnimationFrame(this.detect);
