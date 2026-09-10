@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>ClapCam AI — Fullscreen Neural Studio</title>
+  <title>ClapCam AI — Instant Neural Invisibility Studio</title>
 
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,8 +19,9 @@
       --purple: #8b5cf6;
       --pink: #ec4899;
       --green: #10b981;
-      --glass-bg: rgba(10, 14, 28, 0.75);
-      --glass-border: rgba(255, 255, 255, 0.12);
+      --amber: #f59e0b;
+      --glass-bg: rgba(8, 12, 26, 0.88);
+      --glass-border: rgba(255, 255, 255, 0.15);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
@@ -34,34 +35,48 @@
       font-family: 'Plus Jakarta Sans', sans-serif;
     }
 
-    /* ── Fullscreen Camera & Canvas Layer ────────────────────────────── */
-    #mediaContainer {
+    /* ── Fullscreen Media Layers ─────────────────────────────────────── */
+    #mediaWrap {
       position: fixed;
       inset: 0;
       width: 100vw;
       height: 100vh;
       z-index: 1;
       overflow: hidden;
-      background: #05070f;
+      background: #050711;
     }
 
-    video, canvas {
+    video#vid {
       position: absolute;
       inset: 0;
       width: 100vw;
       height: 100vh;
       object-fit: cover;
-      transform: scaleX(-1); /* Natural mirror reflection */
+      transform: scaleX(-1); /* Natural selfie mirror */
+      z-index: 1;
+      opacity: 1;
     }
-    video { opacity: 0; pointer-events: none; }
-    canvas#cv { z-index: 2; }
 
-    /* Invisibility glowing ambient border */
-    #mediaContainer.glow-invisible {
-      box-shadow: inset 0 0 100px rgba(236, 72, 153, 0.5), inset 0 0 40px rgba(236, 72, 153, 0.8);
+    canvas#cv {
+      position: absolute;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
+      transform: scaleX(-1);
+      z-index: 2;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s;
     }
-    #mediaContainer.glow-clap {
-      box-shadow: inset 0 0 120px rgba(0, 240, 255, 0.7), inset 0 0 50px rgba(0, 240, 255, 0.9);
+    canvas#cv.active { opacity: 1; }
+
+    /* Glowing borders */
+    #mediaWrap.glow-invisible {
+      box-shadow: inset 0 0 120px rgba(236, 72, 153, 0.6), inset 0 0 40px rgba(236, 72, 153, 0.9);
+    }
+    #mediaWrap.glow-clap {
+      box-shadow: inset 0 0 140px rgba(0, 240, 255, 0.8), inset 0 0 50px rgba(0, 240, 255, 1);
     }
 
     /* Flash Transition */
@@ -75,14 +90,12 @@
     }
     #flashLayer.show { opacity: 1; }
 
-    /* ── Floating Sci-Fi HUD ─────────────────────────────────────────── */
-    
-    /* Top Bar */
+    /* ── Top HUD ─────────────────────────────────────────────────────── */
     .hud-top {
       position: fixed;
-      top: 20px;
-      left: 20px;
-      right: 20px;
+      top: 18px;
+      left: 18px;
+      right: 18px;
       z-index: 30;
       display: flex;
       align-items: center;
@@ -129,7 +142,35 @@
       pointer-events: auto;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
+    }
+
+    /* Device Selector Dropdown */
+    .device-select-wrap {
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: 99px;
+      padding: 4px 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+    .device-select-wrap select {
+      background: transparent;
+      border: none;
+      color: var(--cyan);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      outline: none;
+      cursor: pointer;
+      max-width: 200px;
+    }
+    .device-select-wrap select option {
+      background: #090d1f;
+      color: #fff;
     }
 
     .hud-chip {
@@ -137,13 +178,13 @@
       backdrop-filter: blur(20px);
       border: 1px solid var(--glass-border);
       border-radius: 99px;
-      padding: 8px 16px;
+      padding: 7px 14px;
       font-family: 'JetBrains Mono', monospace;
       font-size: 11px;
       font-weight: 600;
       display: flex;
       align-items: center;
-      gap: 7px;
+      gap: 6px;
       color: #94a3b8;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
     }
@@ -154,7 +195,7 @@
       background: #64748b;
     }
     .hud-chip.live {
-      border-color: rgba(16, 185, 129, 0.4);
+      border-color: rgba(16, 185, 129, 0.5);
       color: var(--green);
     }
     .hud-chip.live .dot {
@@ -174,8 +215,8 @@
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
     .btn-icon {
-      width: 40px;
-      height: 40px;
+      width: 38px;
+      height: 38px;
       border-radius: 50%;
       background: var(--glass-bg);
       border: 1px solid var(--glass-border);
@@ -183,26 +224,26 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 18px;
+      font-size: 16px;
       cursor: pointer;
       backdrop-filter: blur(20px);
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
       transition: all 0.2s;
     }
     .btn-icon:hover {
-      background: rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.18);
       transform: scale(1.05);
     }
 
-    /* ── Live Audio Energy Bar in HUD ────────────────────────────────── */
+    /* Equalizer */
     .audio-visualizer-pill {
       background: var(--glass-bg);
       backdrop-filter: blur(20px);
       border: 1px solid var(--glass-border);
       border-radius: 99px;
-      padding: 6px 14px;
+      padding: 6px 12px;
       display: flex;
-      align-items: center;
+      align-items: flex-end;
       gap: 3px;
       height: 38px;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
@@ -218,118 +259,17 @@
     .eq-stick.active { background: var(--purple); }
     .eq-stick.clap { background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
 
-    /* ── Center Prompt / Countdown ───────────────────────────────────── */
-    .center-overlay {
-      position: fixed;
-      inset: 0;
-      z-index: 40;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      pointer-events: none;
-    }
-
-    /* Countdown */
-    .cd-wrapper {
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      background: rgba(5, 8, 20, 0.85);
-      backdrop-filter: blur(25px);
-      padding: 40px 60px;
-      border-radius: 36px;
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.8);
-      pointer-events: auto;
-    }
-    .cd-wrapper.active { display: flex; }
-    .cd-number {
-      font-family: 'Outfit', sans-serif;
-      font-size: 140px;
-      font-weight: 900;
-      line-height: 1;
-      background: linear-gradient(135deg, var(--cyan), var(--pink));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      animation: countZoom 0.95s cubic-bezier(0.16, 1, 0.3, 1) infinite;
-    }
-    .cd-subtitle {
-      font-family: 'Outfit', sans-serif;
-      font-size: 22px;
-      font-weight: 700;
-      color: #f8fafc;
-      margin-top: 10px;
-    }
-    @keyframes countZoom {
-      0% { transform: scale(0.5); opacity: 0; }
-      50% { transform: scale(1.15); opacity: 1; }
-      100% { transform: scale(1); opacity: 1; }
-    }
-
-    /* Permission Unlock Modal */
-    .permission-card {
-      display: none;
-      pointer-events: auto;
-      max-width: 480px;
-      background: rgba(10, 14, 28, 0.95);
-      backdrop-filter: blur(30px);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 28px;
-      padding: 36px;
-      text-align: center;
-      box-shadow: 0 30px 90px rgba(0, 0, 0, 0.9);
-      flex-direction: column;
-      align-items: center;
-      gap: 16px;
-    }
-    .permission-card.active { display: flex; }
-    .perm-icon {
-      width: 64px;
-      height: 64px;
-      border-radius: 20px;
-      background: linear-gradient(135deg, rgba(0, 240, 255, 0.15), rgba(236, 72, 153, 0.15));
-      border: 1px solid rgba(0, 240, 255, 0.4);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 32px;
-      box-shadow: 0 0 30px rgba(0, 240, 255, 0.25);
-    }
-    .perm-title {
-      font-family: 'Outfit', sans-serif;
-      font-size: 24px;
-      font-weight: 800;
-    }
-    .perm-desc {
-      font-size: 14px;
-      color: #94a3b8;
-      line-height: 1.6;
-    }
-    .perm-steps {
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 16px;
-      padding: 14px 18px;
-      text-align: left;
-      font-size: 12px;
-      color: #cbd5e1;
-      line-height: 1.8;
-      width: 100%;
-    }
-    .perm-steps b { color: var(--cyan); }
-
-    /* ── Bottom Floating Dock ────────────────────────────────────────── */
+    /* ── Bottom Dock ─────────────────────────────────────────────────── */
     .dock-container {
       position: fixed;
-      bottom: 28px;
+      bottom: 24px;
       left: 50%;
       transform: translateX(-50%);
       z-index: 30;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 14px;
+      gap: 12px;
       width: auto;
       max-width: 95vw;
     }
@@ -341,7 +281,7 @@
       border-radius: 99px;
       padding: 8px 22px;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 13px;
+      font-size: 12px;
       color: #e2e8f0;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
       display: flex;
@@ -363,20 +303,20 @@
       background: var(--glass-bg);
       backdrop-filter: blur(28px);
       border: 1px solid var(--glass-border);
-      border-radius: 26px;
-      padding: 10px 14px;
+      border-radius: 24px;
+      padding: 8px 12px;
       display: flex;
       align-items: center;
       gap: 10px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
     }
 
     button.dock-btn {
-      padding: 12px 22px;
-      border-radius: 18px;
+      padding: 13px 24px;
+      border-radius: 16px;
       border: none;
       font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 700;
       cursor: pointer;
       display: inline-flex;
@@ -385,40 +325,28 @@
       transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       white-space: nowrap;
     }
-    .btn-cta {
-      background: linear-gradient(135deg, var(--cyan), var(--purple));
-      color: #04060f;
-      box-shadow: 0 4px 20px rgba(0, 240, 255, 0.35);
-    }
-    .btn-cta:hover:not(:disabled) {
-      transform: translateY(-2px) scale(1.02);
-      box-shadow: 0 8px 30px rgba(0, 240, 255, 0.6);
-    }
     .btn-disappear {
       background: linear-gradient(135deg, #ec4899, #a855f7);
       color: #fff;
-      box-shadow: 0 4px 20px rgba(236, 72, 153, 0.4);
+      box-shadow: 0 4px 24px rgba(236, 72, 153, 0.45);
     }
     .btn-disappear:hover:not(:disabled) {
-      transform: translateY(-2px) scale(1.02);
-      box-shadow: 0 8px 30px rgba(236, 72, 153, 0.6);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 34px rgba(236, 72, 153, 0.65);
     }
     .btn-ghost {
-      background: rgba(255, 255, 255, 0.07);
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.14);
       color: #f8fafc;
     }
     .btn-ghost:hover:not(:disabled) {
-      background: rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.16);
       transform: translateY(-1px);
     }
     .btn-danger-ghost {
       background: rgba(239, 68, 68, 0.12);
       border: 1px solid rgba(239, 68, 68, 0.3);
       color: #f87171;
-    }
-    .btn-danger-ghost:hover:not(:disabled) {
-      background: rgba(239, 68, 68, 0.22);
     }
     button.dock-btn:disabled {
       opacity: 0.35;
@@ -427,23 +355,23 @@
       box-shadow: none !important;
     }
 
-    /* ── Settings Drawer (Slide Up) ──────────────────────────────────── */
+    /* Settings Popover */
     .settings-popover {
       position: fixed;
-      bottom: 110px;
+      bottom: 100px;
       left: 50%;
       transform: translateX(-50%) translateY(20px);
       z-index: 35;
       background: var(--glass-bg);
       backdrop-filter: blur(28px);
       border: 1px solid var(--glass-border);
-      border-radius: 24px;
+      border-radius: 22px;
       padding: 20px 24px;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
       display: flex;
       flex-direction: column;
       gap: 16px;
-      width: 380px;
+      width: 360px;
       max-width: 90vw;
       opacity: 0;
       pointer-events: none;
@@ -484,12 +412,12 @@
 <body>
 
   <!-- Fullscreen Media Viewport -->
-  <div id="mediaContainer">
+  <div id="mediaWrap">
     <video id="vid" autoplay playsinline muted></video>
     <canvas id="cv"></canvas>
   </div>
 
-  <!-- Flash Effect Layer -->
+  <!-- Flash Layer -->
   <div id="flashLayer"></div>
 
   <!-- Top Sci-Fi HUD -->
@@ -500,7 +428,15 @@
     </div>
 
     <div class="top-telemetry">
-      <div class="hud-chip" id="chipCam"><div class="dot"></div>Camera Off</div>
+      <!-- Device Selector Dropdown -->
+      <div class="device-select-wrap" id="deviceSelectWrap">
+        <span>📹</span>
+        <select id="cameraSelect">
+          <option value="">Default Camera</option>
+        </select>
+      </div>
+
+      <div class="hud-chip" id="chipCam"><div class="dot"></div>Camera Live</div>
       <div class="hud-chip" id="chipAi"><div class="dot"></div>AI Neural Mask</div>
       
       <!-- Live Equalizer Visualizer -->
@@ -518,127 +454,92 @@
     </div>
   </div>
 
-  <!-- Center Overlay: Countdown & Permission Helper -->
-  <div class="center-overlay">
-    
-    <!-- 3s Step Out Countdown -->
-    <div class="cd-wrapper" id="cdWrapper">
-      <div class="cd-number" id="cdNumber">3</div>
-      <div class="cd-subtitle">Step out of camera view!</div>
-    </div>
-
-    <!-- Permission Unlock Card -->
-    <div class="permission-card" id="permCard">
-      <div class="perm-icon">📹</div>
-      <h2 class="perm-title">Camera Access Required</h2>
-      <p class="perm-desc">Your browser blocked camera or microphone permissions for localhost.</p>
-      
-      <div class="perm-steps">
-        1. Look at the top address bar next to <b>localhost:3030</b>.<br/>
-        2. Click the <b>Site Settings / Lock 🔒</b> icon.<br/>
-        3. Set <b>Camera</b> and <b>Microphone</b> to <b>Allow</b>.<br/>
-        4. Click the button below to retry.
-      </div>
-
-      <button class="dock-btn btn-cta" id="btnRetryPerm" style="width: 100%; justify-content: center; padding: 14px;">
-        🔄 Retry Camera &amp; Mic Access
-      </button>
-    </div>
-
-  </div>
-
   <!-- Settings Popover -->
   <div class="settings-popover" id="settingsPopover">
     <div class="setting-row">
       <span>Clap Sensitivity:</span>
-      <input type="range" id="sensRange" min="25" max="150" value="65" />
+      <input type="range" id="sensRange" min="20" max="150" value="65" />
       <span id="sensText" style="color: var(--cyan); font-family: monospace;">65</span>
     </div>
     <div class="setting-row">
-      <span>Effect Mode:</span>
+      <span>Stealth Effect Style:</span>
       <select id="modeSelect">
-        <option value="cloak">👻 Invisibility Cloak</option>
-        <option value="stealth">🌌 Cyber Hologram</option>
-        <option value="blur">🌫 Background Blur</option>
+        <option value="stealth">🌌 Cyber Hologram / Stealth Cloak</option>
+        <option value="blur">🌫 Live Background Blur</option>
+        <option value="cloak">👻 Auto-Inpainted Clean Room</option>
       </select>
     </div>
     <div class="setting-row">
       <span>AI Mask Outline:</span>
-      <button class="dock-btn btn-ghost" id="btnDebugMask" style="padding: 6px 14px; font-size: 11px;">Toggle Mask</button>
+      <button class="dock-btn btn-ghost" id="btnDebugMask" style="padding: 6px 12px; font-size: 11px;">Toggle Mask</button>
     </div>
   </div>
 
   <!-- Bottom Floating Dock -->
   <div class="dock-container">
     <div class="toast-pill" id="toastPill">
-      <span><b>Ready:</b> Click Start Studio to begin</span>
+      <span><b>Ready!</b> 👏 <b>Clap</b> (or press Space) to vanish instantly!</span>
     </div>
 
     <div class="dock-bar">
-      <button class="dock-btn btn-cta" id="btnLaunch">⚡ Start Studio</button>
-      <button class="dock-btn btn-ghost" id="btnCapture" disabled>📸 Capture Background (3s)</button>
-      <button class="dock-btn btn-disappear" id="btnDisappear" disabled>👻 Disappear (Clap / Space)</button>
-      <button class="dock-btn btn-ghost" id="btnMicToggle" disabled>🎙 Arm Mic</button>
+      <button class="dock-btn btn-disappear" id="btnDisappear">👻 Disappear (Clap / Space)</button>
+      <button class="dock-btn btn-ghost" id="btnMicToggle">🎙 Arm Mic</button>
+      <button class="dock-btn btn-ghost" id="btnLaunch">🛑 Stop Camera</button>
       <button class="dock-btn btn-danger-ghost" id="btnReset">↺ Reset</button>
     </div>
   </div>
 
 <script>
-// ── State ──────────────────────────────────────────────────────────────────────
+// ── Application State ──────────────────────────────────────────────────────────
 const S = {
   cameraActive: false,
   micActive: false,
   aiActive: false,
-  bgCaptured: false,
   invisible: false,
   showDebug: false,
-  effectMode: 'cloak',
+  effectMode: 'stealth', // Instant Cyber Stealth / Hologram (Zero Background Capture needed!)
   threshold: 65,
   cooldownMs: 600,
   lastClap: 0,
   consecutiveFrames: 2,
   consecCount: 0,
-  isCountingDown: false
+  videoDevices: []
 };
 
 // ── DOM References ─────────────────────────────────────────────────────────────
 const vid          = document.getElementById('vid');
 const cv           = document.getElementById('cv');
 const ctx          = cv.getContext('2d', { willReadFrequently: true });
-const mediaBox     = document.getElementById('mediaContainer');
+const mediaWrap    = document.getElementById('mediaWrap');
 const flashLayer   = document.getElementById('flashLayer');
-const cdWrapper    = document.getElementById('cdWrapper');
-const cdNumber     = document.getElementById('cdNumber');
-const permCard     = document.getElementById('permCard');
 const toastPill    = document.getElementById('toastPill');
 const settingsPop  = document.getElementById('settingsPopover');
+const cameraSelect = document.getElementById('cameraSelect');
 
-// Badges & Buttons
+// Buttons & Badges
 const chipCam      = document.getElementById('chipCam');
 const chipAi       = document.getElementById('chipAi');
 const chipState    = document.getElementById('chipState');
 const btnLaunch    = document.getElementById('btnLaunch');
-const btnCapture   = document.getElementById('btnCapture');
 const btnDisappear = document.getElementById('btnDisappear');
 const btnMicToggle = document.getElementById('btnMicToggle');
 const btnReset     = document.getElementById('btnReset');
 const btnFullscreen= document.getElementById('btnFullscreen');
 const btnSettingsToggle = document.getElementById('btnSettingsToggle');
 const btnDebugMask = document.getElementById('btnDebugMask');
-const btnRetryPerm = document.getElementById('btnRetryPerm');
 const sensRange    = document.getElementById('sensRange');
 const sensText     = document.getElementById('sensText');
 const modeSelect   = document.getElementById('modeSelect');
 const eqSticks     = Array.from(document.querySelectorAll('.eq-stick'));
 
 // ── Offscreen Memory Canvases ──────────────────────────────────────────────────
-const bgCanvas = document.createElement('canvas');
-const bgCtx = bgCanvas.getContext('2d', { willReadFrequently: true });
+const autoBgCanvas = document.createElement('canvas');
+const autoBgCtx = autoBgCanvas.getContext('2d', { willReadFrequently: true });
 
 const maskCanvas = document.createElement('canvas');
 const maskCtx = maskCanvas.getContext('2d', { willReadFrequently: true });
 
-// ── Synthesized Chime Sounds ───────────────────────────────────────────────────
+// ── Sound Synthesizer ──────────────────────────────────────────────────────────
 function playChime(freq = 880, dur = 0.12, type = 'sine') {
   try {
     const actx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
@@ -655,47 +556,81 @@ function playChime(freq = 880, dur = 0.12, type = 'sine') {
   } catch(e) {}
 }
 
-// ── 1. Camera Initialization with Multi-Tier Fallback ──────────────────────────
+// ── 1. Camera Engine ───────────────────────────────────────────────────────────
 let cameraStream = null;
 
-async function startCamera() {
-  permCard.classList.remove('active');
+async function populateCameraDevices() {
   try {
-    // Attempt standard HD camera stream
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    S.videoDevices = devices.filter(d => d.kind === 'videoinput');
+    
+    cameraSelect.innerHTML = '';
+    S.videoDevices.forEach((dev, idx) => {
+      const opt = document.createElement('option');
+      opt.value = dev.deviceId;
+      opt.textContent = dev.label || `Camera ${idx + 1}`;
+      cameraSelect.appendChild(opt);
+    });
+  } catch(e) {}
+}
+
+async function startCamera(deviceId = null) {
+  try {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(t => t.stop());
+    }
+
+    const constraints = {
+      video: deviceId ? { deviceId: { exact: deviceId } } : { facingMode: 'user' },
+      audio: false
+    };
+
     let stream;
     try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 1920, min: 640 }, height: { ideal: 1080, min: 480 }, facingMode: 'user' },
-        audio: false
-      });
-    } catch(err1) {
-      // Fallback: simple constraint
+      stream = await navigator.mediaDevices.getUserMedia(constraints);
+    } catch(errConstraint) {
       stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
     }
 
     cameraStream = stream;
     vid.srcObject = stream;
-    await vid.play();
 
-    resizeCanvasToScreen();
-    window.addEventListener('resize', resizeCanvasToScreen);
+    await new Promise((resolve) => {
+      if (vid.readyState >= 2) return resolve();
+      vid.onloadedmetadata = () => resolve();
+      setTimeout(resolve, 800);
+    });
+
+    try {
+      await vid.play();
+    } catch(e) {}
+
+    cv.width = window.innerWidth;
+    cv.height = window.innerHeight;
+    window.addEventListener('resize', () => {
+      cv.width = window.innerWidth;
+      cv.height = window.innerHeight;
+    });
 
     S.cameraActive = true;
+    vid.style.opacity = '1';
+
     chipCam.className = 'hud-chip live';
     chipCam.innerHTML = '<div class="dot"></div>Camera Live';
 
-    btnLaunch.innerHTML = '🛑 Stop';
+    btnLaunch.innerHTML = '🛑 Stop Camera';
     btnLaunch.className = 'dock-btn btn-ghost';
-    btnCapture.disabled = false;
     btnMicToggle.disabled = false;
-    btnDisappear.disabled = !S.bgCaptured;
+    btnDisappear.disabled = false;
 
     updateToast();
+    await populateCameraDevices();
     requestAnimationFrame(renderLoop);
+
+    startMic().catch(() => {});
     return true;
   } catch(err) {
-    console.error('Camera access failed:', err);
-    permCard.classList.add('active');
+    console.error('Camera startup error:', err);
     return false;
   }
 }
@@ -706,21 +641,16 @@ function stopCamera() {
     cameraStream = null;
   }
   S.cameraActive = false;
+  vid.style.opacity = '0';
   chipCam.className = 'hud-chip';
   chipCam.innerHTML = '<div class="dot"></div>Camera Off';
 
-  btnLaunch.innerHTML = '⚡ Start Studio';
+  btnLaunch.innerHTML = '📹 Start Camera';
   btnLaunch.className = 'dock-btn btn-cta';
-  btnCapture.disabled = true;
   btnDisappear.disabled = true;
   btnMicToggle.disabled = true;
 
   updateToast();
-}
-
-function resizeCanvasToScreen() {
-  cv.width = window.innerWidth;
-  cv.height = window.innerHeight;
 }
 
 // ── 2. MediaPipe Neural Segmentation ──────────────────────────────────────────
@@ -736,7 +666,7 @@ function initMediaPipe() {
       });
 
       selfieSegmentation.setOptions({
-        modelSelection: 1, // 1 = Landscape / Ultra-Fast
+        modelSelection: 1, // 1 = Landscape Fast Model
         selfieMode: false
       });
 
@@ -750,184 +680,157 @@ function initMediaPipe() {
       chipAi.innerHTML = '<div class="dot"></div>AI Neural Ready';
     }
   } catch(e) {
-    console.warn('MediaPipe fallback:', e);
+    console.warn('MediaPipe notice:', e);
   }
 }
 
-// ── 3. High-Speed Fullscreen Render Loop ───────────────────────────────────────
+// ── 3. Instant Invisibility Render Loop (NO Background Capture Required!) ───────
 function renderLoop() {
   if (!S.cameraActive) return;
 
   const w = cv.width;
   const h = cv.height;
 
-  if (maskCanvas.width !== w || maskCanvas.height !== h) {
-    maskCanvas.width = w;
-    maskCanvas.height = h;
-  }
-
-  // Send frame to AI neural network
+  // Send video frame to MediaPipe AI
   if (selfieSegmentation && !isInferencing && vid.readyState >= 2) {
     isInferencing = true;
     selfieSegmentation.send({ image: vid }).catch(() => { isInferencing = false; });
   }
 
-  ctx.save();
-  ctx.clearRect(0, 0, w, h);
+  // Accumulate automatic clean room background in offscreen buffer
+  if (autoBgCanvas.width !== w || autoBgCanvas.height !== h) {
+    autoBgCanvas.width = w;
+    autoBgCanvas.height = h;
+  }
+  if (!S.invisible) {
+    // Continuously record live background when visible
+    drawCover(autoBgCtx, vid, w, h);
+  }
 
-  // 1. Draw live video feed (scaled to fullscreen cover)
-  drawVideoCover(ctx, vid, w, h);
+  // When invisible mode is ON or debug mask is ON, draw composited output
+  if (S.invisible || S.showDebug) {
+    cv.classList.add('active');
 
-  // 2. If INVISIBLE MODE is active:
-  if (S.invisible) {
-    if (S.effectMode === 'cloak' && S.bgCaptured) {
-      // ── Clean Plate Invisibility Masking ──────────────────────────────
-      if (lastMask) {
-        maskCtx.save();
-        maskCtx.clearRect(0, 0, w, h);
-        drawVideoCover(maskCtx, lastMask, w, h);
-        maskCtx.globalCompositeOperation = 'source-in';
-        drawVideoCover(maskCtx, bgCanvas, w, h);
-        maskCtx.restore();
-
-        // Draw clean background ONLY over the person's silhouette
-        ctx.drawImage(maskCanvas, 0, 0, w, h);
-      } else {
-        // Fallback: draw full background plate
-        drawVideoCover(ctx, bgCanvas, w, h);
-      }
-
-    } else if (S.effectMode === 'stealth') {
-      // ── Cyber Hologram Mask ───────────────────────────────────────────
-      if (lastMask) {
-        maskCtx.save();
-        maskCtx.clearRect(0, 0, w, h);
-        drawVideoCover(maskCtx, lastMask, w, h);
-        maskCtx.globalCompositeOperation = 'source-in';
-
-        const grad = maskCtx.createLinearGradient(0, 0, w, h);
-        grad.addColorStop(0, 'rgba(0, 240, 255, 0.45)');
-        grad.addColorStop(0.5, 'rgba(139, 92, 246, 0.45)');
-        grad.addColorStop(1, 'rgba(236, 72, 153, 0.45)');
-        maskCtx.fillStyle = grad;
-        maskCtx.fillRect(0, 0, w, h);
-        maskCtx.restore();
-
-        ctx.drawImage(maskCanvas, 0, 0, w, h);
-      }
-
-    } else if (S.effectMode === 'blur') {
-      // ── Background Blur ───────────────────────────────────────────────
-      if (lastMask) {
-        maskCtx.save();
-        maskCtx.clearRect(0, 0, w, h);
-        drawVideoCover(maskCtx, lastMask, w, h);
-        maskCtx.globalCompositeOperation = 'source-out';
-        maskCtx.filter = 'blur(18px)';
-        drawVideoCover(maskCtx, vid, w, h);
-        maskCtx.restore();
-
-        ctx.drawImage(maskCanvas, 0, 0, w, h);
-      }
+    if (maskCanvas.width !== w || maskCanvas.height !== h) {
+      maskCanvas.width = w;
+      maskCanvas.height = h;
     }
-  }
 
-  // 3. Debug Silhouette Mask
-  if (S.showDebug && lastMask) {
     ctx.save();
-    ctx.globalAlpha = 0.4;
-    drawVideoCover(ctx, lastMask, w, h);
+    ctx.clearRect(0, 0, w, h);
+
+    if (S.invisible) {
+      if (S.effectMode === 'stealth') {
+        // ── INSTANT CYBER STEALTH HOLOGRAM (Default: No Background Capture Needed!)
+        drawCover(ctx, vid, w, h);
+
+        if (lastMask) {
+          maskCtx.save();
+          maskCtx.clearRect(0, 0, w, h);
+          drawCover(maskCtx, lastMask, w, h);
+          maskCtx.globalCompositeOperation = 'source-in';
+
+          const grad = maskCtx.createLinearGradient(0, 0, w, h);
+          grad.addColorStop(0, 'rgba(0, 240, 255, 0.7)');
+          grad.addColorStop(0.5, 'rgba(139, 92, 246, 0.7)');
+          grad.addColorStop(1, 'rgba(236, 72, 153, 0.7)');
+          maskCtx.fillStyle = grad;
+          maskCtx.fillRect(0, 0, w, h);
+          maskCtx.restore();
+
+          ctx.drawImage(maskCanvas, 0, 0, w, h);
+        }
+
+      } else if (S.effectMode === 'cloak') {
+        // ── AUTOMATIC CLEAN ROOM INPAINTER ──────────────────────────────────
+        drawCover(ctx, autoBgCanvas, w, h);
+
+        if (lastMask) {
+          maskCtx.save();
+          maskCtx.clearRect(0, 0, w, h);
+          drawCover(maskCtx, lastMask, w, h);
+          maskCtx.globalCompositeOperation = 'source-out'; // Live room outside person
+          drawCover(maskCtx, vid, w, h);
+          maskCtx.restore();
+
+          ctx.drawImage(maskCanvas, 0, 0, w, h);
+        }
+
+      } else if (S.effectMode === 'blur') {
+        // ── LIVE BACKGROUND BLUR ──────────────────────────────────────────
+        drawCover(ctx, vid, w, h);
+
+        if (lastMask) {
+          maskCtx.save();
+          maskCtx.clearRect(0, 0, w, h);
+          drawCover(maskCtx, lastMask, w, h);
+          maskCtx.globalCompositeOperation = 'source-out';
+          maskCtx.filter = 'blur(20px)';
+          drawCover(maskCtx, vid, w, h);
+          maskCtx.restore();
+
+          ctx.drawImage(maskCanvas, 0, 0, w, h);
+        }
+      }
+    } else {
+      drawCover(ctx, vid, w, h);
+    }
+
+    // Mask Debug Outline
+    if (S.showDebug && lastMask) {
+      ctx.save();
+      ctx.globalAlpha = 0.5;
+      drawCover(ctx, lastMask, w, h);
+      ctx.restore();
+    }
+
     ctx.restore();
+  } else {
+    cv.classList.remove('active');
   }
 
-  ctx.restore();
   requestAnimationFrame(renderLoop);
 }
 
-// Utility: Draw video or canvas source with object-fit: cover scaling
-function drawVideoCover(targetCtx, source, targetW, targetH) {
-  const srcW = source.videoWidth || source.width || targetW;
-  const srcH = source.videoHeight || source.height || targetH;
-  if (!srcW || !srcH) return;
+// Utility: Aspect Ratio Cover Scaling
+function drawCover(targetCtx, src, targetW, targetH) {
+  try {
+    const srcW = src.videoWidth || src.width || targetW;
+    const srcH = src.videoHeight || src.height || targetH;
+    if (!srcW || !srcH) return;
 
-  const srcRatio = srcW / srcH;
-  const targetRatio = targetW / targetH;
+    const srcRatio = srcW / srcH;
+    const targetRatio = targetW / targetH;
 
-  let drawW, drawH, drawX, drawY;
-  if (targetRatio > srcRatio) {
-    drawW = targetW;
-    drawH = targetW / srcRatio;
-    drawX = 0;
-    drawY = (targetH - drawH) / 2;
-  } else {
-    drawH = targetH;
-    drawW = targetH * srcRatio;
-    drawX = (targetW - drawW) / 2;
-    drawY = 0;
-  }
-
-  targetCtx.drawImage(source, drawX, drawY, drawW, drawH);
-}
-
-// ── 4. Background Capture with 3s Step-Out Countdown ───────────────────────────
-function startCountdownCapture() {
-  if (!S.cameraActive || S.isCountingDown) return;
-  S.isCountingDown = true;
-  cdWrapper.classList.add('active');
-
-  let count = 3;
-  cdNumber.textContent = count;
-  playChime(600, 0.1);
-
-  const timer = setInterval(() => {
-    count--;
-    if (count > 0) {
-      cdNumber.textContent = count;
-      playChime(600, 0.1);
+    let dw, dh, dx, dy;
+    if (targetRatio > srcRatio) {
+      dw = targetW;
+      dh = targetW / srcRatio;
+      dx = 0;
+      dy = (targetH - dh) / 2;
     } else {
-      clearInterval(timer);
-      cdWrapper.classList.remove('active');
-      S.isCountingDown = false;
-      captureBackgroundPlate();
-      playChime(1200, 0.3, 'triangle');
+      dh = targetH;
+      dw = targetH * srcRatio;
+      dx = (targetW - dw) / 2;
+      dy = 0;
     }
-  }, 1000);
+    targetCtx.drawImage(src, dx, dy, dw, dh);
+  } catch(e) {}
 }
 
-function captureBackgroundPlate() {
-  if (!S.cameraActive || vid.readyState < 2) return;
-  const w = cv.width;
-  const h = cv.height;
-
-  bgCanvas.width = w;
-  bgCanvas.height = h;
-  drawVideoCover(bgCtx, vid, w, h);
-
-  S.bgCaptured = true;
-  btnDisappear.disabled = false;
-
-  triggerFlash('rgba(16, 185, 129, 0.4)');
-  updateToast();
-}
-
-// ── 5. Invisibility Toggle ────────────────────────────────────────────────────
+// ── 4. Instant Invisibility Toggle (No Capture Countdown Needed!) ──────────────
 function toggleInvisibility() {
-  if (!S.bgCaptured && S.effectMode === 'cloak') {
-    startCountdownCapture();
-    return;
-  }
-
   S.invisible = !S.invisible;
 
   if (S.invisible) {
-    mediaBox.className = 'glow-invisible';
+    mediaWrap.className = 'glow-invisible';
     chipState.className = 'hud-chip inv';
     chipState.innerHTML = '<div class="dot"></div>👻 INVISIBLE';
     btnDisappear.innerHTML = '👁 Reappear';
     triggerFlash('rgba(236, 72, 153, 0.5)');
     playChime(1080, 0.22, 'sine');
   } else {
-    mediaBox.className = '';
+    mediaWrap.className = '';
     chipState.className = 'hud-chip live';
     chipState.innerHTML = '<div class="dot"></div>Visible';
     btnDisappear.innerHTML = '👻 Disappear (Clap / Space)';
@@ -938,7 +841,7 @@ function toggleInvisibility() {
   updateToast();
 }
 
-// ── 6. Audio Engine & Clap Detection ──────────────────────────────────────────
+// ── 5. Audio Engine & Clap Detection ──────────────────────────────────────────
 let audioCtx = null;
 let audioAnalyser = null;
 let micStream = null;
@@ -967,8 +870,7 @@ async function startMic() {
     audioLoop();
     return true;
   } catch(err) {
-    console.error('Microphone error:', err);
-    alert('Microphone permission blocked. Please enable microphone permissions in your URL bar.');
+    console.warn('Mic notice:', err);
     return false;
   }
 }
@@ -993,7 +895,6 @@ function audioLoop() {
   if (!S.micActive || !audioAnalyser) return;
   audioAnalyser.getByteFrequencyData(freqBuffer);
 
-  // 2–4 kHz human clap frequency band
   const sampleRate = audioCtx.sampleRate;
   const binCount   = audioAnalyser.frequencyBinCount;
   const binWidth   = sampleRate / (binCount * 2);
@@ -1035,14 +936,10 @@ function audioLoop() {
 function onClapTrigger() {
   S.lastClap = Date.now();
   triggerFlash('rgba(0, 240, 255, 0.55)');
-  mediaBox.classList.add('glow-clap');
-  setTimeout(() => mediaBox.classList.remove('glow-clap'), 300);
+  mediaWrap.classList.add('glow-clap');
+  setTimeout(() => mediaWrap.classList.remove('glow-clap'), 300);
 
-  if (!S.bgCaptured && S.effectMode === 'cloak') {
-    captureBackgroundPlate();
-  } else {
-    toggleInvisibility();
-  }
+  toggleInvisibility();
 }
 
 // ── UI Helpers ─────────────────────────────────────────────────────────────────
@@ -1054,49 +951,38 @@ function triggerFlash(colorRgba) {
 
 function updateToast() {
   if (!S.cameraActive) {
-    toastPill.innerHTML = '<span><b>Step 1:</b> Click <b>"Start Studio"</b></span>';
+    toastPill.innerHTML = '<span><b>Camera Off</b> — Click Start Camera</span>';
   } else if (!S.micActive) {
     toastPill.innerHTML = '<span><b>Step 2:</b> Click <b>"Arm Mic"</b> (or press Space)</span>';
-  } else if (!S.bgCaptured && S.effectMode === 'cloak') {
-    toastPill.innerHTML = '<span><b>Step 3:</b> Click <b>"Capture Background"</b> &amp; step out</span>';
   } else if (!S.invisible) {
-    toastPill.innerHTML = '<span><b>Ready!</b> 👏 <b>Clap</b> (or press Space) to vanish!</span>';
+    toastPill.innerHTML = '<span><b>Ready!</b> 👏 <b>Clap</b> (or press Space) to vanish instantly!</span>';
   } else {
-    toastPill.innerHTML = '<span class="tag-inv">INVISIBLE</span> <span>AI Person Mask Active — 👏 <b>Clap</b> to reappear</span>';
+    toastPill.innerHTML = '<span class="tag-inv">INVISIBLE</span> <span>AI Stealth Active — 👏 <b>Clap</b> to reappear</span>';
   }
 }
 
 function resetStudio() {
   stopMic();
-  S.bgCaptured = false;
   S.invisible = false;
-  mediaBox.className = '';
+  mediaWrap.className = '';
+  cv.classList.remove('active');
   chipState.className = 'hud-chip';
   chipState.innerHTML = '<div class="dot"></div>Visible';
-  btnDisappear.disabled = true;
   btnDisappear.innerHTML = '👻 Disappear (Clap / Space)';
   updateToast();
 }
 
 // ── Event Handlers ─────────────────────────────────────────────────────────────
-btnLaunch.addEventListener('click', async () => {
-  if (S.cameraActive) {
-    stopCamera();
-    stopMic();
-  } else {
-    const ok = await startCamera();
-    if (ok) await startMic();
-  }
+btnLaunch.addEventListener('click', () => {
+  if (S.cameraActive) stopCamera();
+  else startCamera(cameraSelect.value || null);
 });
 
-btnRetryPerm.addEventListener('click', async () => {
-  permCard.classList.remove('active');
-  const ok = await startCamera();
-  if (ok) await startMic();
+cameraSelect.addEventListener('change', () => {
+  startCamera(cameraSelect.value || null);
 });
 
 btnMicToggle.addEventListener('click', () => S.micActive ? stopMic() : startMic());
-btnCapture.addEventListener('click', startCountdownCapture);
 btnDisappear.addEventListener('click', toggleInvisibility);
 btnReset.addEventListener('click', resetStudio);
 
@@ -1124,7 +1010,6 @@ sensRange.addEventListener('input', (e) => {
 
 modeSelect.addEventListener('change', (e) => {
   S.effectMode = e.target.value;
-  btnDisappear.disabled = !S.cameraActive;
   updateToast();
 });
 
@@ -1136,10 +1021,11 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
-// Auto-initialize MediaPipe on page load
+// Auto-initialize on page load
 window.addEventListener('load', () => {
   initMediaPipe();
   updateToast();
+  startCamera().catch(() => {});
 });
 </script>
 </body>
