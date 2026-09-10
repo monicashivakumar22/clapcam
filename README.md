@@ -1,32 +1,60 @@
-# React + TypeScript + Vite
+# ClapCam AI
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Real-time AI "invisibility cloak" that runs entirely in your browser:
 
-Currently, two official plugins are available:
+- **Clap detection** (Web Audio API, 2–4 kHz bandpass) toggles visibility
+- **Person segmentation** (MediaPipe Selfie Segmentation, GPU delegate) composites your face/person
+  out of the live feed and replaces it with a captured clean background plate
+- **Air-gapped**: zero server uploads; all video/audio processing stays on-device
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Tech Stack
 
-## React Compiler
+- Vite 8 + React 19 + TypeScript
+- Tailwind CSS 4 (v3-style theme config loaded via `@config` in `src/index.css`)
+- Zustand (global state), Framer Motion, lucide-react
+- Express (static hosting + small JSON API for the production build)
+- `@mediapipe/tasks-vision` for selfie segmentation
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Getting Started
 
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev          # Vite dev server → http://localhost:5173
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+The dev server proxies `/api/*` to the Express API on port 3001.
+
+## Production (Express server)
+
+```bash
+npm run build        # typecheck + build frontend into dist/
+npm run start        # Express serves dist/ + API → http://localhost:3001
+```
+
+Or in one shot:
+
+```bash
+npm run serve        # build + start
+```
+
+### API endpoints
+
+| Endpoint                | Description                          |
+| ----------------------- | ------------------------------------ |
+| `GET /api/health`       | Liveness check (status, uptime)      |
+| `GET /api/system-info`  | Runtime capabilities / privacy info  |
+
+The Express server sets `Cross-Origin-Opener-Policy: same-origin` and
+`Cross-Origin-Embedder-Policy: require-corp` headers so the WASM vision pipeline
+works when served from the production server.
+
+## Scripts
+
+| Script           | Purpose                              |
+| ---------------- | ------------------------------------ |
+| `npm run dev`    | Vite dev server (HMR)                |
+| `npm run build`  | `tsc -b` + `vite build`              |
+| `npm run start`  | Run Express production server        |
+| `npm run serve`  | `build` then `start`                 |
+| `npm run lint`   | oxlint                               |
+| `npm run preview`| Vite preview of the build            |
