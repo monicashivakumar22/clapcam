@@ -499,9 +499,9 @@ const S = {
   showDebug: false,
   effectMode: 'vanish', // TRUE COMPLETE INVISIBILITY (No Purple Tint!)
   threshold: 65,
-  cooldownMs: 600,
+  cooldownMs: 1000,
   lastClap: 0,
-  consecutiveFrames: 2,
+  consecutiveFrames: 1, // trigger instantly on spike
   consecCount: 0,
   videoDevices: []
 };
@@ -631,6 +631,7 @@ async function startCamera(deviceId = null) {
     return true;
   } catch(err) {
     console.error('Camera startup error:', err);
+    toastPill.innerHTML = `<span><b style="color:#f87171">Camera Error:</b> ${err.message || 'Not available'}</span>`;
     return false;
   }
 }
@@ -703,20 +704,29 @@ function renderLoop() {
   if (autoBgCanvas.width !== w || autoBgCanvas.height !== h) {
     autoBgCanvas.width = w;
     autoBgCanvas.height = h;
+    bgInitialized = false;
   }
 
-  // Build clean room background continuously from unoccluded room regions
-  if (!S.invisible || !bgInitialized) {
-    if (lastMask) {
-      // Use the inverted mask to copy ONLY the background pixels around the person
-      autoBgCtx.save();
-      drawCover(autoBgCtx, vid, w, h);
-      autoBgCtx.restore();
-      bgInitialized = true;
-    } else {
-      drawCover(autoBgCtx, vid, w, h);
-      bgInitialized = true;
-    }
+  // Initial fill of the background
+  if (!bgInitialized && vid.readyState >= 2) {
+    drawCover(autoBgCtx, vid, w, h);
+    bgInitialized = true;
+  }
+
+  // Continuous background accumulation!
+  // We constantly update autoBgCanvas with the latest video, BUT ONLY where the person is NOT.
+  if (lastMask && bgInitialized && vid.readyState >= 2) {
+    maskCtx.save();
+    maskCtx.clearRect(0, 0, w, h);
+    drawCover(maskCtx, lastMask, w, h);
+    maskCtx.globalCompositeOperation = 'source-out'; 
+    drawCover(maskCtx, vid, w, h);
+    maskCtx.restore();
+    
+    // Draw the extracted background onto our accumulator canvas.
+    // Because maskCanvas is transparent where the person is, it WON'T overwrite the person's area
+    // in autoBgCanvas. This means as the person moves, the clean background gets filled in perfectly!
+    autoBgCtx.drawImage(maskCanvas, 0, 0, w, h);
   }
 
   // When invisible mode is ON or debug mask is ON, composite canvas over live video
@@ -739,15 +749,8 @@ function renderLoop() {
 
         // Step B: Draw live room video everywhere EXCEPT where the person is standing!
         if (lastMask) {
-          maskCtx.save();
-          maskCtx.clearRect(0, 0, w, h);
-          drawCover(maskCtx, lastMask, w, h);
-          maskCtx.globalCompositeOperation = 'source-out'; // Keeps background, erases person!
-          drawCover(maskCtx, vid, w, h);
-          maskCtx.restore();
-
-          // Composite the live room on top!
-          // Result: Live room around you + Clean background room over your body = 100% INVISIBLE!
+          // Note: maskCanvas already contains the extracted live background from the accumulation step above!
+          // We can just draw it!
           ctx.drawImage(maskCanvas, 0, 0, w, h);
         }
 
@@ -907,6 +910,8 @@ function stopMic() {
   updateToast();
 }
 
+let rollingEnergy = 0;
+
 function audioLoop() {
   if (!S.micActive || !audioAnalyser) return;
   audioAnalyser.getByteFrequencyData(freqBuffer);
@@ -923,10 +928,13 @@ function audioLoop() {
     bandCount++;
   }
   const energy = bandCount > 0 ? bandSum / bandCount : 0;
+  
+  // Rolling average for sharp spike detection (prevents continuous noise from triggering)
+  rollingEnergy = rollingEnergy * 0.85 + energy * 0.15;
+  const isSpike = (energy > S.threshold) && (energy > rollingEnergy * 1.8);
 
   // Equalizer visualizer
   const step = Math.floor(binCount / eqSticks.length);
-  const isSpike = energy > S.threshold;
   for (let i = 0; i < eqSticks.length; i++) {
     const raw = freqBuffer[i * step] || 0;
     const h = Math.max(4, (raw / 255) * 26);
@@ -936,7 +944,7 @@ function audioLoop() {
 
   // Trigger Gate
   const now = Date.now();
-  if (energy > S.threshold) {
+  if (isSpike) {
     S.consecCount++;
     if (S.consecCount >= S.consecutiveFrames && now - S.lastClap > S.cooldownMs) {
       S.consecCount = 0;

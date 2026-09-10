@@ -6,11 +6,15 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "start": "node server/index.js",
+    "serve": "npm run build && npm run start",
     "lint": "oxlint",
     "preview": "vite preview"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "^1.0.1",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
     "framer-motion": "^13.2.0",
     "lucide-react": "^1.43.0",
     "react": "^19.2.8",
