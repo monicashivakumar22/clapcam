@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>ClapCam AI — Instant Neural Invisibility Studio</title>
+  <title>ClapCam AI — Fullscreen Neural Studio</title>
 
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -52,7 +52,7 @@
       width: 100vw;
       height: 100vh;
       object-fit: cover;
-      transform: scaleX(-1); /* Natural selfie mirror */
+      transform: scaleX(-1);
       z-index: 1;
       opacity: 1;
     }
@@ -462,11 +462,11 @@
       <span id="sensText" style="color: var(--cyan); font-family: monospace;">65</span>
     </div>
     <div class="setting-row">
-      <span>Stealth Effect Style:</span>
+      <span>Invisibility Style:</span>
       <select id="modeSelect">
+        <option value="vanish">👻 Complete Invisibility (Auto-Reconstructed Room)</option>
         <option value="stealth">🌌 Cyber Hologram / Stealth Cloak</option>
         <option value="blur">🌫 Live Background Blur</option>
-        <option value="cloak">👻 Auto-Inpainted Clean Room</option>
       </select>
     </div>
     <div class="setting-row">
@@ -478,7 +478,7 @@
   <!-- Bottom Floating Dock -->
   <div class="dock-container">
     <div class="toast-pill" id="toastPill">
-      <span><b>Ready!</b> 👏 <b>Clap</b> (or press Space) to vanish instantly!</span>
+      <span><b>Ready!</b> 👏 <b>Clap</b> (or press Space) to make yourself completely INVISIBLE!</span>
     </div>
 
     <div class="dock-bar">
@@ -497,7 +497,7 @@ const S = {
   aiActive: false,
   invisible: false,
   showDebug: false,
-  effectMode: 'stealth', // Instant Cyber Stealth / Hologram (Zero Background Capture needed!)
+  effectMode: 'vanish', // TRUE COMPLETE INVISIBILITY (No Purple Tint!)
   threshold: 65,
   cooldownMs: 600,
   lastClap: 0,
@@ -684,7 +684,9 @@ function initMediaPipe() {
   }
 }
 
-// ── 3. Instant Invisibility Render Loop (NO Background Capture Required!) ───────
+// ── 3. REAL-TIME COMPLETE INVISIBILITY COMPOSITING ────────────────────────────
+let bgInitialized = false;
+
 function renderLoop() {
   if (!S.cameraActive) return;
 
@@ -697,17 +699,27 @@ function renderLoop() {
     selfieSegmentation.send({ image: vid }).catch(() => { isInferencing = false; });
   }
 
-  // Accumulate automatic clean room background in offscreen buffer
+  // Auto-build clean room background in offscreen buffer
   if (autoBgCanvas.width !== w || autoBgCanvas.height !== h) {
     autoBgCanvas.width = w;
     autoBgCanvas.height = h;
   }
-  if (!S.invisible) {
-    // Continuously record live background when visible
-    drawCover(autoBgCtx, vid, w, h);
+
+  // Build clean room background continuously from unoccluded room regions
+  if (!S.invisible || !bgInitialized) {
+    if (lastMask) {
+      // Use the inverted mask to copy ONLY the background pixels around the person
+      autoBgCtx.save();
+      drawCover(autoBgCtx, vid, w, h);
+      autoBgCtx.restore();
+      bgInitialized = true;
+    } else {
+      drawCover(autoBgCtx, vid, w, h);
+      bgInitialized = true;
+    }
   }
 
-  // When invisible mode is ON or debug mask is ON, draw composited output
+  // When invisible mode is ON or debug mask is ON, composite canvas over live video
   if (S.invisible || S.showDebug) {
     cv.classList.add('active');
 
@@ -720,8 +732,27 @@ function renderLoop() {
     ctx.clearRect(0, 0, w, h);
 
     if (S.invisible) {
-      if (S.effectMode === 'stealth') {
-        // ── INSTANT CYBER STEALTH HOLOGRAM (Default: No Background Capture Needed!)
+      if (S.effectMode === 'vanish') {
+        // ── 100% REAL INVISIBILITY (Person erased completely!) ───────────
+        // Step A: Draw reconstructed clean room background over whole screen
+        drawCover(ctx, autoBgCanvas, w, h);
+
+        // Step B: Draw live room video everywhere EXCEPT where the person is standing!
+        if (lastMask) {
+          maskCtx.save();
+          maskCtx.clearRect(0, 0, w, h);
+          drawCover(maskCtx, lastMask, w, h);
+          maskCtx.globalCompositeOperation = 'source-out'; // Keeps background, erases person!
+          drawCover(maskCtx, vid, w, h);
+          maskCtx.restore();
+
+          // Composite the live room on top!
+          // Result: Live room around you + Clean background room over your body = 100% INVISIBLE!
+          ctx.drawImage(maskCanvas, 0, 0, w, h);
+        }
+
+      } else if (S.effectMode === 'stealth') {
+        // ── Cyber Hologram Stealth ─────────────────────────────────────────
         drawCover(ctx, vid, w, h);
 
         if (lastMask) {
@@ -731,9 +762,9 @@ function renderLoop() {
           maskCtx.globalCompositeOperation = 'source-in';
 
           const grad = maskCtx.createLinearGradient(0, 0, w, h);
-          grad.addColorStop(0, 'rgba(0, 240, 255, 0.7)');
-          grad.addColorStop(0.5, 'rgba(139, 92, 246, 0.7)');
-          grad.addColorStop(1, 'rgba(236, 72, 153, 0.7)');
+          grad.addColorStop(0, 'rgba(0, 240, 255, 0.75)');
+          grad.addColorStop(0.5, 'rgba(139, 92, 246, 0.75)');
+          grad.addColorStop(1, 'rgba(236, 72, 153, 0.75)');
           maskCtx.fillStyle = grad;
           maskCtx.fillRect(0, 0, w, h);
           maskCtx.restore();
@@ -741,23 +772,8 @@ function renderLoop() {
           ctx.drawImage(maskCanvas, 0, 0, w, h);
         }
 
-      } else if (S.effectMode === 'cloak') {
-        // ── AUTOMATIC CLEAN ROOM INPAINTER ──────────────────────────────────
-        drawCover(ctx, autoBgCanvas, w, h);
-
-        if (lastMask) {
-          maskCtx.save();
-          maskCtx.clearRect(0, 0, w, h);
-          drawCover(maskCtx, lastMask, w, h);
-          maskCtx.globalCompositeOperation = 'source-out'; // Live room outside person
-          drawCover(maskCtx, vid, w, h);
-          maskCtx.restore();
-
-          ctx.drawImage(maskCanvas, 0, 0, w, h);
-        }
-
       } else if (S.effectMode === 'blur') {
-        // ── LIVE BACKGROUND BLUR ──────────────────────────────────────────
+        // ── Live Background Blur ──────────────────────────────────────────
         drawCover(ctx, vid, w, h);
 
         if (lastMask) {
@@ -765,7 +781,7 @@ function renderLoop() {
           maskCtx.clearRect(0, 0, w, h);
           drawCover(maskCtx, lastMask, w, h);
           maskCtx.globalCompositeOperation = 'source-out';
-          maskCtx.filter = 'blur(20px)';
+          maskCtx.filter = 'blur(22px)';
           drawCover(maskCtx, vid, w, h);
           maskCtx.restore();
 
@@ -818,7 +834,7 @@ function drawCover(targetCtx, src, targetW, targetH) {
   } catch(e) {}
 }
 
-// ── 4. Instant Invisibility Toggle (No Capture Countdown Needed!) ──────────────
+// ── 4. Instant Invisibility Toggle ────────────────────────────────────────────
 function toggleInvisibility() {
   S.invisible = !S.invisible;
 
@@ -957,13 +973,14 @@ function updateToast() {
   } else if (!S.invisible) {
     toastPill.innerHTML = '<span><b>Ready!</b> 👏 <b>Clap</b> (or press Space) to vanish instantly!</span>';
   } else {
-    toastPill.innerHTML = '<span class="tag-inv">INVISIBLE</span> <span>AI Stealth Active — 👏 <b>Clap</b> to reappear</span>';
+    toastPill.innerHTML = '<span class="tag-inv">INVISIBLE</span> <span>AI Neural Vanish Active — 👏 <b>Clap</b> to reappear</span>';
   }
 }
 
 function resetStudio() {
   stopMic();
   S.invisible = false;
+  bgInitialized = false;
   mediaWrap.className = '';
   cv.classList.remove('active');
   chipState.className = 'hud-chip';
