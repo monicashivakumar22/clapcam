@@ -8,7 +8,7 @@
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 
   <!-- MediaPipe Selfie Segmentation -->
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js" crossorigin="anonymous"></script>
@@ -67,13 +67,13 @@
       z-index: 2;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.15s;
+      transition: opacity 0.12s;
     }
     canvas#cv.active { opacity: 1; }
 
     /* Glowing borders */
     #mediaWrap.glow-invisible {
-      box-shadow: inset 0 0 120px rgba(236, 72, 153, 0.6), inset 0 0 40px rgba(236, 72, 153, 0.9);
+      box-shadow: inset 0 0 120px rgba(0, 240, 255, 0.6), inset 0 0 40px rgba(0, 240, 255, 0.9);
     }
     #mediaWrap.glow-clap {
       box-shadow: inset 0 0 140px rgba(0, 240, 255, 0.8), inset 0 0 50px rgba(0, 240, 255, 1);
@@ -86,7 +86,7 @@
       z-index: 50;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.1s ease-out;
+      transition: opacity 0.12s ease-out;
     }
     #flashLayer.show { opacity: 1; }
 
@@ -166,7 +166,7 @@
       font-weight: 600;
       outline: none;
       cursor: pointer;
-      max-width: 200px;
+      max-width: 180px;
     }
     .device-select-wrap select option {
       background: #090d1f;
@@ -204,13 +204,13 @@
       animation: pulse 1.2s infinite;
     }
     .hud-chip.inv {
-      background: rgba(236, 72, 153, 0.25);
-      border-color: rgba(236, 72, 153, 0.6);
-      color: #f472b6;
+      background: rgba(0, 240, 255, 0.2);
+      border-color: rgba(0, 240, 255, 0.7);
+      color: var(--cyan);
     }
     .hud-chip.inv .dot {
-      background: var(--pink);
-      box-shadow: 0 0 12px var(--pink);
+      background: var(--cyan);
+      box-shadow: 0 0 12px var(--cyan);
     }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
@@ -256,7 +256,7 @@
       min-height: 4px;
       transition: height 0.05s ease-out, background 0.15s;
     }
-    .eq-stick.active { background: var(--purple); }
+    .eq-stick.active { background: var(--green); }
     .eq-stick.clap { background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
 
     /* ── Bottom Dock ─────────────────────────────────────────────────── */
@@ -275,7 +275,7 @@
     }
 
     .toast-pill {
-      background: rgba(7, 10, 24, 0.9);
+      background: rgba(7, 10, 24, 0.92);
       backdrop-filter: blur(20px);
       border: 1px solid var(--glass-border);
       border-radius: 99px;
@@ -291,8 +291,8 @@
     }
     .toast-pill b { color: var(--cyan); }
     .toast-pill .tag-inv {
-      background: linear-gradient(135deg, #ec4899, #f43f5e);
-      color: #fff;
+      background: linear-gradient(135deg, #00f0ff, #8b5cf6);
+      color: #050711;
       padding: 2px 8px;
       border-radius: 6px;
       font-weight: 800;
@@ -312,7 +312,7 @@
     }
 
     button.dock-btn {
-      padding: 13px 24px;
+      padding: 13px 22px;
       border-radius: 16px;
       border: none;
       font-family: 'Plus Jakarta Sans', sans-serif;
@@ -326,13 +326,18 @@
       white-space: nowrap;
     }
     .btn-disappear {
-      background: linear-gradient(135deg, #ec4899, #a855f7);
-      color: #fff;
-      box-shadow: 0 4px 24px rgba(236, 72, 153, 0.45);
+      background: linear-gradient(135deg, #00f0ff, #8b5cf6);
+      color: #050711;
+      box-shadow: 0 4px 24px rgba(0, 240, 255, 0.45);
     }
     .btn-disappear:hover:not(:disabled) {
       transform: translateY(-2px);
-      box-shadow: 0 8px 34px rgba(236, 72, 153, 0.65);
+      box-shadow: 0 8px 34px rgba(0, 240, 255, 0.65);
+    }
+    .btn-mic-active {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: var(--green);
     }
     .btn-ghost {
       background: rgba(255, 255, 255, 0.08);
@@ -371,7 +376,7 @@
       display: flex;
       flex-direction: column;
       gap: 16px;
-      width: 360px;
+      width: 380px;
       max-width: 90vw;
       opacity: 0;
       pointer-events: none;
@@ -436,11 +441,12 @@
         </select>
       </div>
 
-      <div class="hud-chip" id="chipCam"><div class="dot"></div>Camera Live</div>
-      <div class="hud-chip" id="chipAi"><div class="dot"></div>AI Neural Mask</div>
+      <div class="hud-chip" id="chipCam"><div class="dot"></div>Camera Off</div>
+      <div class="hud-chip" id="chipMic"><div class="dot"></div>Mic Off</div>
+      <div class="hud-chip" id="chipAi"><div class="dot"></div>AI Neural Ready</div>
       
       <!-- Live Equalizer Visualizer -->
-      <div class="audio-visualizer-pill" id="eqPill" title="Clap Frequency Energy">
+      <div class="audio-visualizer-pill" id="eqPill" title="Live Microphone Visualizer">
         <div class="eq-stick"></div><div class="eq-stick"></div><div class="eq-stick"></div><div class="eq-stick"></div>
         <div class="eq-stick"></div><div class="eq-stick"></div><div class="eq-stick"></div><div class="eq-stick"></div>
         <div class="eq-stick"></div><div class="eq-stick"></div><div class="eq-stick"></div><div class="eq-stick"></div>
@@ -464,8 +470,8 @@
     <div class="setting-row">
       <span>Invisibility Style:</span>
       <select id="modeSelect">
-        <option value="vanish">👻 Complete Invisibility (Auto-Reconstructed Room)</option>
-        <option value="stealth">🌌 Cyber Hologram / Stealth Cloak</option>
+        <option value="cloak">🔮 Optical Invisibility Cloak</option>
+        <option value="stealth">🌌 Cyber Hologram Cloak</option>
         <option value="blur">🌫 Live Background Blur</option>
       </select>
     </div>
@@ -478,7 +484,7 @@
   <!-- Bottom Floating Dock -->
   <div class="dock-container">
     <div class="toast-pill" id="toastPill">
-      <span><b>Ready!</b> 👏 <b>Clap</b> (or press Space) to make yourself completely INVISIBLE!</span>
+      <span><b>Ready!</b> 👏 <b>Clap</b> (or press Space) to vanish!</span>
     </div>
 
     <div class="dock-bar">
@@ -497,11 +503,11 @@ const S = {
   aiActive: false,
   invisible: false,
   showDebug: false,
-  effectMode: 'vanish', // TRUE COMPLETE INVISIBILITY (No Purple Tint!)
+  effectMode: 'cloak', // OPTICAL INVISIBILITY CLOAK ON SILHOUETTE
   threshold: 65,
-  cooldownMs: 1000,
+  cooldownMs: 800,
   lastClap: 0,
-  consecutiveFrames: 1, // trigger instantly on spike
+  consecutiveFrames: 1,
   consecCount: 0,
   videoDevices: []
 };
@@ -516,8 +522,9 @@ const toastPill    = document.getElementById('toastPill');
 const settingsPop  = document.getElementById('settingsPopover');
 const cameraSelect = document.getElementById('cameraSelect');
 
-// Buttons & Badges
+// Badges & Buttons
 const chipCam      = document.getElementById('chipCam');
+const chipMic      = document.getElementById('chipMic');
 const chipAi       = document.getElementById('chipAi');
 const chipState    = document.getElementById('chipState');
 const btnLaunch    = document.getElementById('btnLaunch');
@@ -532,14 +539,16 @@ const sensText     = document.getElementById('sensText');
 const modeSelect   = document.getElementById('modeSelect');
 const eqSticks     = Array.from(document.querySelectorAll('.eq-stick'));
 
-// ── Offscreen Memory Canvases ──────────────────────────────────────────────────
-const autoBgCanvas = document.createElement('canvas');
-const autoBgCtx = autoBgCanvas.getContext('2d', { willReadFrequently: true });
-
+// ── Offscreen Processing Buffers ───────────────────────────────────────────────
+// Person Alpha Mask
 const maskCanvas = document.createElement('canvas');
 const maskCtx = maskCanvas.getContext('2d', { willReadFrequently: true });
 
-// ── Sound Synthesizer ──────────────────────────────────────────────────────────
+// Cloak Texture Buffer
+const cloakCanvas = document.createElement('canvas');
+const cloakCtx = cloakCanvas.getContext('2d', { willReadFrequently: true });
+
+// ── Audio Synthesizer ──────────────────────────────────────────────────────────
 function playChime(freq = 880, dur = 0.12, type = 'sine') {
   try {
     const actx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
@@ -575,13 +584,23 @@ async function populateCameraDevices() {
 }
 
 async function startCamera(deviceId = null) {
+  hidePermissionOverlay();
+
   try {
     if (cameraStream) {
       cameraStream.getTracks().forEach(t => t.stop());
     }
 
+    try {
+      const permStatus = await navigator.permissions.query({ name: 'camera' });
+      if (permStatus.state === 'denied') {
+        showPermissionOverlay('camera');
+        return false;
+      }
+    } catch(e) {}
+
     const constraints = {
-      video: deviceId ? { deviceId: { exact: deviceId } } : { facingMode: 'user' },
+      video: deviceId ? { deviceId: { exact: deviceId } } : { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
       audio: false
     };
 
@@ -589,6 +608,9 @@ async function startCamera(deviceId = null) {
     try {
       stream = await navigator.mediaDevices.getUserMedia(constraints);
     } catch(errConstraint) {
+      if (errConstraint.name === 'NotAllowedError' || errConstraint.name === 'PermissionDeniedError') {
+        throw errConstraint;
+      }
       stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
     }
 
@@ -627,11 +649,14 @@ async function startCamera(deviceId = null) {
     await populateCameraDevices();
     requestAnimationFrame(renderLoop);
 
-    startMic().catch(() => {});
     return true;
   } catch(err) {
     console.error('Camera startup error:', err);
-    toastPill.innerHTML = `<span><b style="color:#f87171">Camera Error:</b> ${err.message || 'Not available'}</span>`;
+    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+      showPermissionOverlay('camera');
+    } else {
+      toastPill.innerHTML = `<span><b style="color:#f87171">Camera Error:</b> ${err.message || 'Not available'} — <a href="#" onclick="startCamera();return false" style="color:var(--cyan);text-decoration:underline;">Retry</a></span>`;
+    }
     return false;
   }
 }
@@ -647,11 +672,100 @@ function stopCamera() {
   chipCam.innerHTML = '<div class="dot"></div>Camera Off';
 
   btnLaunch.innerHTML = '📹 Start Camera';
-  btnLaunch.className = 'dock-btn btn-cta';
+  btnLaunch.className = 'dock-btn btn-disappear';
   btnDisappear.disabled = true;
   btnMicToggle.disabled = true;
 
   updateToast();
+}
+
+// ── Permission Denied Overlay ──────────────────────────────────────────────────
+function showPermissionOverlay(type = 'camera') {
+  hidePermissionOverlay();
+  const isMic = type === 'mic';
+  const overlay = document.createElement('div');
+  overlay.id = 'permOverlay';
+  overlay.style.cssText = `
+    position:fixed; inset:0; z-index:100;
+    background: rgba(5,7,17,0.95);
+    display:flex; align-items:center; justify-content:center;
+    backdrop-filter: blur(20px);
+  `;
+  overlay.innerHTML = `
+    <div style="
+      background: rgba(15,20,40,0.95);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 28px;
+      padding: 40px 48px;
+      max-width: 520px;
+      width: 90vw;
+      text-align: center;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.8);
+    ">
+      <div style="font-size:56px; margin-bottom:16px;">${isMic ? '🎙️' : '🔒'}</div>
+      <h2 style="
+        font-family:'Outfit',sans-serif;
+        font-size:24px;
+        font-weight:800;
+        margin-bottom:8px;
+        background: linear-gradient(90deg,#f87171,#ec4899);
+        -webkit-background-clip:text;
+        -webkit-text-fill-color:transparent;
+      ">${isMic ? 'Microphone Permission Needed' : 'Camera Permission Denied'}</h2>
+      <p style="color:#94a3b8; font-size:14px; line-height:1.7; margin-bottom:24px;">
+        ${isMic ? 'ClapCam needs microphone access to detect your claps in real time:' : 'Your browser blocked camera access. Follow these steps to fix it:'}
+      </p>
+      <div style="
+        text-align:left;
+        background: rgba(0,0,0,0.3);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 16px;
+        padding: 20px 24px;
+        margin-bottom: 24px;
+      ">
+        <div style="color:#e2e8f0; font-size:14px; line-height:2;">
+          <b style="color:#00f0ff;">Step 1:</b> Click the <b>🔒 lock icon</b> on the left of the URL bar<br>
+          <b style="color:#00f0ff;">Step 2:</b> Set <b>"${isMic ? 'Microphone' : 'Camera'}"</b> to <b>"Allow"</b><br>
+          <b style="color:#00f0ff;">Step 3:</b> Click <b>"Retry"</b> below
+        </div>
+      </div>
+      <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+        <button onclick="hidePermissionOverlay(); ${isMic ? 'startMic();' : 'startCamera();'}" style="
+          padding: 14px 32px;
+          border-radius: 16px;
+          border: none;
+          background: linear-gradient(135deg, #00f0ff, #8b5cf6);
+          color: #fff;
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 15px;
+          font-weight: 700;
+          cursor: pointer;
+          box-shadow: 0 4px 24px rgba(0,240,255,0.4);
+        ">
+          🔄 Retry ${isMic ? 'Mic' : 'Camera'}
+        </button>
+        <button onclick="hidePermissionOverlay();" style="
+          padding: 14px 24px;
+          border-radius: 16px;
+          border: 1px solid rgba(255,255,255,0.15);
+          background: rgba(255,255,255,0.08);
+          color: #f8fafc;
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+        ">
+          Dismiss
+        </button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+function hidePermissionOverlay() {
+  const old = document.getElementById('permOverlay');
+  if (old) old.remove();
 }
 
 // ── 2. MediaPipe Neural Segmentation ──────────────────────────────────────────
@@ -685,9 +799,7 @@ function initMediaPipe() {
   }
 }
 
-// ── 3. REAL-TIME COMPLETE INVISIBILITY COMPOSITING ────────────────────────────
-let bgInitialized = false;
-
+// ── 3. REAL-TIME OPTICAL INVISIBILITY PIPELINE ─────────────────────────────────
 function renderLoop() {
   if (!S.cameraActive) return;
 
@@ -700,112 +812,121 @@ function renderLoop() {
     selfieSegmentation.send({ image: vid }).catch(() => { isInferencing = false; });
   }
 
-  // Auto-build clean room background in offscreen buffer
-  if (autoBgCanvas.width !== w || autoBgCanvas.height !== h) {
-    autoBgCanvas.width = w;
-    autoBgCanvas.height = h;
-    bgInitialized = false;
+  // Ensure buffers match viewport resolution
+  if (maskCanvas.width !== w || maskCanvas.height !== h) {
+    maskCanvas.width = w;
+    maskCanvas.height = h;
+  }
+  if (cloakCanvas.width !== w || cloakCanvas.height !== h) {
+    cloakCanvas.width = w;
+    cloakCanvas.height = h;
   }
 
-  // Initial fill of the background
-  if (!bgInitialized && vid.readyState >= 2) {
-    drawCover(autoBgCtx, vid, w, h);
-    bgInitialized = true;
-  }
-
-  // Continuous background accumulation!
-  // We constantly update autoBgCanvas with the latest video, BUT ONLY where the person is NOT.
-  if (lastMask && bgInitialized && vid.readyState >= 2) {
-    maskCtx.save();
-    maskCtx.clearRect(0, 0, w, h);
+  // ── STEP 1: CONVERT MEDIAPIPE MASK TO TRUE 32-BIT ALPHA CUTOUT ──────────────
+  let hasValidMask = false;
+  if (lastMask && vid.readyState >= 2) {
+    hasValidMask = true;
     drawCover(maskCtx, lastMask, w, h);
-    maskCtx.globalCompositeOperation = 'source-out'; 
-    drawCover(maskCtx, vid, w, h);
-    maskCtx.restore();
-    
-    // Draw the extracted background onto our accumulator canvas.
-    // Because maskCanvas is transparent where the person is, it WON'T overwrite the person's area
-    // in autoBgCanvas. This means as the person moves, the clean background gets filled in perfectly!
-    autoBgCtx.drawImage(maskCanvas, 0, 0, w, h);
+
+    const imgData = maskCtx.getImageData(0, 0, w, h);
+    const data32 = new Uint32Array(imgData.data.buffer);
+    const len = data32.length;
+
+    for (let i = 0; i < len; i++) {
+      const r = data32[i] & 0xFF; // Luminance
+      if (r > 40) {
+        // Person region: Solid/Feathered Alpha
+        const a = r > 160 ? 255 : Math.floor(((r - 40) / 120) * 255);
+        data32[i] = (a << 24) | 0x00FFFFFF;
+      } else {
+        // Background region: Transparent
+        data32[i] = 0x00000000;
+      }
+    }
+    maskCtx.putImageData(imgData, 0, 0);
   }
 
-  // When invisible mode is ON or debug mask is ON, composite canvas over live video
+  // ── STEP 2: RENDER LIVE VIDEO + CONFINED INVISIBLE CLOAK ON SILHOUETTE ───────
   if (S.invisible || S.showDebug) {
     cv.classList.add('active');
-
-    if (maskCanvas.width !== w || maskCanvas.height !== h) {
-      maskCanvas.width = w;
-      maskCanvas.height = h;
-    }
+    vid.style.opacity = '0'; // Video rendered on canvas
 
     ctx.save();
     ctx.clearRect(0, 0, w, h);
 
-    if (S.invisible) {
-      if (S.effectMode === 'vanish') {
-        // ── 100% REAL INVISIBILITY (Person erased completely!) ───────────
-        // Step A: Draw reconstructed clean room background over whole screen
-        drawCover(ctx, autoBgCanvas, w, h);
+    // 1. ALWAYS render the LIVE 100% crisp webcam video everywhere as the base
+    drawCover(ctx, vid, w, h);
 
-        // Step B: Draw live room video everywhere EXCEPT where the person is standing!
-        if (lastMask) {
-          // Note: maskCanvas already contains the extracted live background from the accumulation step above!
-          // We can just draw it!
-          ctx.drawImage(maskCanvas, 0, 0, w, h);
-        }
+    if (S.invisible && hasValidMask) {
+      if (S.effectMode === 'cloak') {
+        // ── 🔮 OPTICAL INVISIBILITY CLOAK (ONLY ON PERSON/FACE SILHOUETTE) ─────
+        // 1. Prepare refracted background texture
+        cloakCtx.save();
+        cloakCtx.clearRect(0, 0, w, h);
+        cloakCtx.filter = 'blur(10px) brightness(1.08) contrast(1.05)';
+        drawCover(cloakCtx, vid, w, h);
+        cloakCtx.restore();
+
+        // 2. Clip strictly inside person mask (so surrounding room is untouched)
+        cloakCtx.save();
+        cloakCtx.globalCompositeOperation = 'destination-in';
+        cloakCtx.drawImage(maskCanvas, 0, 0, w, h);
+        cloakCtx.restore();
+
+        // 3. Draw cloaking texture ONLY over the person's silhouette
+        ctx.drawImage(cloakCanvas, 0, 0, w, h);
+
+        // 4. Subtle optical boundary highlight
+        ctx.save();
+        ctx.shadowColor = 'rgba(0, 240, 255, 0.6)';
+        ctx.shadowBlur = 12;
+        ctx.globalAlpha = 0.25;
+        ctx.drawImage(maskCanvas, 0, 0, w, h);
+        ctx.restore();
 
       } else if (S.effectMode === 'stealth') {
-        // ── Cyber Hologram Stealth ─────────────────────────────────────────
-        drawCover(ctx, vid, w, h);
+        // ── 🌌 CYBER HOLOGRAM CLOAK ───────────────────────────────────────────
+        maskCtx.save();
+        maskCtx.globalCompositeOperation = 'source-in';
+        const grad = maskCtx.createLinearGradient(0, 0, w, h);
+        grad.addColorStop(0, 'rgba(0, 240, 255, 0.75)');
+        grad.addColorStop(0.5, 'rgba(139, 92, 246, 0.75)');
+        grad.addColorStop(1, 'rgba(236, 72, 153, 0.75)');
+        maskCtx.fillStyle = grad;
+        maskCtx.fillRect(0, 0, w, h);
+        maskCtx.restore();
 
-        if (lastMask) {
-          maskCtx.save();
-          maskCtx.clearRect(0, 0, w, h);
-          drawCover(maskCtx, lastMask, w, h);
-          maskCtx.globalCompositeOperation = 'source-in';
-
-          const grad = maskCtx.createLinearGradient(0, 0, w, h);
-          grad.addColorStop(0, 'rgba(0, 240, 255, 0.75)');
-          grad.addColorStop(0.5, 'rgba(139, 92, 246, 0.75)');
-          grad.addColorStop(1, 'rgba(236, 72, 153, 0.75)');
-          maskCtx.fillStyle = grad;
-          maskCtx.fillRect(0, 0, w, h);
-          maskCtx.restore();
-
-          ctx.drawImage(maskCanvas, 0, 0, w, h);
-        }
+        ctx.drawImage(maskCanvas, 0, 0, w, h);
 
       } else if (S.effectMode === 'blur') {
-        // ── Live Background Blur ──────────────────────────────────────────
+        // ── 🌫 LIVE BACKGROUND BLUR ───────────────────────────────────────────
+        ctx.save();
+        ctx.filter = 'blur(18px)';
         drawCover(ctx, vid, w, h);
+        ctx.restore();
 
-        if (lastMask) {
+        if (hasValidMask) {
           maskCtx.save();
-          maskCtx.clearRect(0, 0, w, h);
-          drawCover(maskCtx, lastMask, w, h);
-          maskCtx.globalCompositeOperation = 'source-out';
-          maskCtx.filter = 'blur(22px)';
+          maskCtx.globalCompositeOperation = 'source-in';
           drawCover(maskCtx, vid, w, h);
           maskCtx.restore();
-
           ctx.drawImage(maskCanvas, 0, 0, w, h);
         }
       }
-    } else {
-      drawCover(ctx, vid, w, h);
     }
 
     // Mask Debug Outline
-    if (S.showDebug && lastMask) {
+    if (S.showDebug && hasValidMask) {
       ctx.save();
-      ctx.globalAlpha = 0.5;
-      drawCover(ctx, lastMask, w, h);
+      ctx.globalAlpha = 0.4;
+      ctx.drawImage(maskCanvas, 0, 0, w, h);
       ctx.restore();
     }
 
     ctx.restore();
   } else {
     cv.classList.remove('active');
+    vid.style.opacity = '1';
   }
 
   requestAnimationFrame(renderLoop);
@@ -844,10 +965,10 @@ function toggleInvisibility() {
   if (S.invisible) {
     mediaWrap.className = 'glow-invisible';
     chipState.className = 'hud-chip inv';
-    chipState.innerHTML = '<div class="dot"></div>👻 INVISIBLE';
+    chipState.innerHTML = '<div class="dot"></div>🔮 INVISIBLE';
     btnDisappear.innerHTML = '👁 Reappear';
-    triggerFlash('rgba(236, 72, 153, 0.5)');
-    playChime(1080, 0.22, 'sine');
+    triggerFlash('rgba(0, 240, 255, 0.6)');
+    playChime(1120, 0.22, 'sine');
   } else {
     mediaWrap.className = '';
     chipState.className = 'hud-chip live';
@@ -865,47 +986,82 @@ let audioCtx = null;
 let audioAnalyser = null;
 let micStream = null;
 let freqBuffer = null;
+let timeBuffer = null;
 let audioRaf = null;
 
 async function startMic() {
+  hidePermissionOverlay();
   try {
-    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if (audioCtx.state === 'suspended') await audioCtx.resume();
+    if (!audioCtx || audioCtx.state === 'closed') {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') {
+      await audioCtx.resume();
+    }
 
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false
+        }
+      });
+    } catch(errRaw) {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    }
+
+    micStream = stream;
     audioAnalyser = audioCtx.createAnalyser();
-    audioAnalyser.fftSize = 1024;
-    audioAnalyser.smoothingTimeConstant = 0.2;
+    audioAnalyser.fftSize = 512;
+    audioAnalyser.smoothingTimeConstant = 0.15;
 
     const source = audioCtx.createMediaStreamSource(micStream);
     source.connect(audioAnalyser);
 
     freqBuffer = new Uint8Array(audioAnalyser.frequencyBinCount);
+    timeBuffer = new Uint8Array(audioAnalyser.fftSize);
     S.micActive = true;
 
     btnMicToggle.innerHTML = '🔇 Disarm Mic';
-    btnMicToggle.className = 'dock-btn btn-ghost';
+    btnMicToggle.className = 'dock-btn btn-mic-active';
+    chipMic.className = 'hud-chip live';
+    chipMic.innerHTML = '<div class="dot"></div>Mic Live';
+
     updateToast();
+    playChime(980, 0.08, 'sine');
     audioLoop();
     return true;
   } catch(err) {
-    console.warn('Mic notice:', err);
+    console.error('Microphone startup error:', err);
+    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+      showPermissionOverlay('mic');
+    } else {
+      toastPill.innerHTML = `<span><b style="color:#f87171">Mic Error:</b> ${err.message || 'Not available'} — <a href="#" onclick="startMic();return false" style="color:var(--cyan);text-decoration:underline;">Retry</a></span>`;
+    }
     return false;
   }
 }
 
 function stopMic() {
-  if (audioRaf) cancelAnimationFrame(audioRaf);
+  if (audioRaf) {
+    cancelAnimationFrame(audioRaf);
+    audioRaf = null;
+  }
   if (micStream) {
     micStream.getTracks().forEach(t => t.stop());
     micStream = null;
   }
-  if (audioCtx) {
-    audioCtx.close();
+  if (audioCtx && audioCtx.state !== 'closed') {
+    audioCtx.close().catch(() => {});
     audioCtx = null;
   }
   S.micActive = false;
   btnMicToggle.innerHTML = '🎙 Arm Mic';
+  btnMicToggle.className = 'dock-btn btn-ghost';
+  chipMic.className = 'hud-chip';
+  chipMic.innerHTML = '<div class="dot"></div>Mic Off';
   eqSticks.forEach(s => { s.style.height = '4px'; s.className = 'eq-stick'; });
   updateToast();
 }
@@ -915,51 +1071,48 @@ let rollingEnergy = 0;
 function audioLoop() {
   if (!S.micActive || !audioAnalyser) return;
   audioAnalyser.getByteFrequencyData(freqBuffer);
+  audioAnalyser.getByteTimeDomainData(timeBuffer);
 
-  const sampleRate = audioCtx.sampleRate;
-  const binCount   = audioAnalyser.frequencyBinCount;
-  const binWidth   = sampleRate / (binCount * 2);
-  const loBin      = Math.floor(2000 / binWidth);
-  const hiBin      = Math.min(Math.ceil(4000 / binWidth), binCount - 1);
+  const binCount = audioAnalyser.frequencyBinCount;
+  const loBin = Math.floor(binCount * 0.15);
+  const hiBin = Math.floor(binCount * 0.55);
 
-  let bandSum = 0, bandCount = 0;
+  let bandSum = 0;
   for (let i = loBin; i <= hiBin; i++) {
     bandSum += freqBuffer[i];
-    bandCount++;
   }
-  const energy = bandCount > 0 ? bandSum / bandCount : 0;
-  
-  // Rolling average for sharp spike detection (prevents continuous noise from triggering)
-  rollingEnergy = rollingEnergy * 0.85 + energy * 0.15;
-  const isSpike = (energy > S.threshold) && (energy > rollingEnergy * 1.8);
+  const energy = bandSum / (hiBin - loBin + 1);
 
-  // Equalizer visualizer
+  let maxAmp = 0;
+  for (let i = 0; i < timeBuffer.length; i++) {
+    const v = Math.abs(timeBuffer[i] - 128);
+    if (v > maxAmp) maxAmp = v;
+  }
+
+  rollingEnergy = rollingEnergy * 0.85 + energy * 0.15;
+  const isClapSpike = (energy > S.threshold || maxAmp > 90) && (energy > rollingEnergy * 1.6 + 15);
+
   const step = Math.floor(binCount / eqSticks.length);
   for (let i = 0; i < eqSticks.length; i++) {
     const raw = freqBuffer[i * step] || 0;
-    const h = Math.max(4, (raw / 255) * 26);
+    const h = Math.max(4, (raw / 255) * 28);
     eqSticks[i].style.height = `${h}px`;
-    eqSticks[i].className = 'eq-stick' + (isSpike ? ' clap' : ' active');
+    eqSticks[i].className = 'eq-stick' + (isClapSpike ? ' clap' : (h > 6 ? ' active' : ''));
   }
 
-  // Trigger Gate
   const now = Date.now();
-  if (isSpike) {
-    S.consecCount++;
-    if (S.consecCount >= S.consecutiveFrames && now - S.lastClap > S.cooldownMs) {
-      S.consecCount = 0;
+  if (isClapSpike) {
+    if (now - S.lastClap > S.cooldownMs) {
+      S.lastClap = now;
       onClapTrigger();
     }
-  } else {
-    S.consecCount = 0;
   }
 
   audioRaf = requestAnimationFrame(audioLoop);
 }
 
 function onClapTrigger() {
-  S.lastClap = Date.now();
-  triggerFlash('rgba(0, 240, 255, 0.55)');
+  triggerFlash('rgba(0, 240, 255, 0.65)');
   mediaWrap.classList.add('glow-clap');
   setTimeout(() => mediaWrap.classList.remove('glow-clap'), 300);
 
@@ -977,18 +1130,17 @@ function updateToast() {
   if (!S.cameraActive) {
     toastPill.innerHTML = '<span><b>Camera Off</b> — Click Start Camera</span>';
   } else if (!S.micActive) {
-    toastPill.innerHTML = '<span><b>Step 2:</b> Click <b>"Arm Mic"</b> (or press Space)</span>';
+    toastPill.innerHTML = '<span><b>Tip:</b> Click <b>"🎙 Arm Mic"</b> to enable clapping (or use Spacebar)</span>';
   } else if (!S.invisible) {
-    toastPill.innerHTML = '<span><b>Ready!</b> 👏 <b>Clap</b> (or press Space) to vanish instantly!</span>';
+    toastPill.innerHTML = '<span><b>Ready!</b> 👏 <b>Clap</b> (or press Space) for Invisibility Cloak!</span>';
   } else {
-    toastPill.innerHTML = '<span class="tag-inv">INVISIBLE</span> <span>AI Neural Vanish Active — 👏 <b>Clap</b> to reappear</span>';
+    toastPill.innerHTML = '<span class="tag-inv">CLOAK ACTIVE</span> <span>Invisibility Cloak Active — 👏 <b>Clap</b> to reappear</span>';
   }
 }
 
 function resetStudio() {
   stopMic();
   S.invisible = false;
-  bgInitialized = false;
   mediaWrap.className = '';
   cv.classList.remove('active');
   chipState.className = 'hud-chip';
@@ -1007,7 +1159,11 @@ cameraSelect.addEventListener('change', () => {
   startCamera(cameraSelect.value || null);
 });
 
-btnMicToggle.addEventListener('click', () => S.micActive ? stopMic() : startMic());
+btnMicToggle.addEventListener('click', () => {
+  if (S.micActive) stopMic();
+  else startMic();
+});
+
 btnDisappear.addEventListener('click', toggleInvisibility);
 btnReset.addEventListener('click', resetStudio);
 
